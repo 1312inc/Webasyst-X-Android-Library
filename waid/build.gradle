@@ -1,0 +1,12 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'idea'
+
+android {
+    compileSdkVersion target_sdk_version
+}
+
+dependencies {
+    implementation project(':auth:kt')
+    api project(':common')
+}

@@ -1,0 +1,26 @@
+buildscript {
+    ext {
+        androidx_annotation_version = '1.1.0'
+        build_tools_version = '30.0.2'
+        kotlin_version = '1.4.21'
+        ktor_version = '1.5.1'
+        min_sdk_version = 16
+        target_sdk_version = 30
+    }
+    repositories {
+        mavenCentral()
+        jcenter()
+        google()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:4.1.2'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+allprojects {
+    repositories {
+        mavenCentral()
+        google()
+    }
+}
