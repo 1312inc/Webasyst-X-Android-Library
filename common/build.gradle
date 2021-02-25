@@ -1,9 +1,29 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: 'maven-publish'
 apply plugin: 'idea'
+
+group = 'com.webasyst'
+version = waid_version
 
 android {
     compileSdkVersion target_sdk_version
+}
+
+repositories {
+    mavenCentral()
+    google()
+    maven { url 'https://plugins.gradle.org/m2/' }
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+            }
+        }
+    }
 }
 
 dependencies {
