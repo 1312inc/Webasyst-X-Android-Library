@@ -1,5 +1,6 @@
 rootProject.name = 'Webasyst X Android Library'
 include ':app-blog'
+include ':app-shop'
 include ':auth'
 include ':auth:kt'
 include ':common'
