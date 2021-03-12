@@ -1,24 +1,26 @@
 apply plugin: 'com.android.library'
 apply plugin: 'maven-publish'
+apply plugin: 'com.vanniktech.maven.publish'
+apply plugin: 'org.jetbrains.dokka'
 apply plugin: 'idea'
 
-group = 'com.webasyst'
-version = waid_version
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.vanniktech:gradle-maven-publish-plugin:0.13.0'
+        classpath 'org.jetbrains.dokka:dokka-gradle-plugin:1.4.20'
+    }
+}
+
+group = GROUP
+version = VERSION_NAME
 
 repositories {
     mavenCentral()
     google()
     maven { url 'https://plugins.gradle.org/m2/' }
-}
-
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication) {
-                from components.release
-            }
-        }
-    }
 }
 
 android {
