@@ -3,6 +3,7 @@ package com.webasyst.api
 import androidx.annotation.CallSuper
 import com.google.gson.reflect.TypeToken
 import io.ktor.client.HttpClient
+import io.ktor.client.features.ClientRequestException
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.request.forms.MultiPartFormDataContent
@@ -12,6 +13,7 @@ import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.readText
 import io.ktor.http.ContentType
 import io.ktor.util.toByteArray
 import java.nio.charset.Charset
@@ -79,10 +81,15 @@ abstract class ApiModule(
     }
 
     protected suspend inline fun <reified T> HttpClient.doGet(urlString: String, block: HttpRequestBuilder.() -> Unit = {}) = apiRequest {
-        get<HttpResponse>(urlString) {
-            configureRequest()
-            apply(block)
-        }.parse(object : TypeToken<T>() {})
+        try {
+            get<HttpResponse>(urlString) {
+                configureRequest()
+                apply(block)
+            }.parse(object : TypeToken<T>() {})
+        } catch (e: ClientRequestException) {
+            val body = e.response.readText(Charset.forName("UTF-8"))
+            throw ApiError(gson.fromJson(body, ApiError.ApiCallResponse::class.java), e)
+        }
     }
 
     protected suspend inline fun <reified T> HttpClient.doPost(urlString: String, block: HttpRequestBuilder.() -> Unit = {}) = apiRequest {
@@ -97,6 +104,7 @@ abstract class ApiModule(
         try {
             return gson.fromJson(body, typeToken.type)
         } catch (e: Throwable) {
+            e.printStackTrace()
             throw ApiError(gson.fromJson(body, ApiError.ApiCallResponse::class.java))
         }
     }

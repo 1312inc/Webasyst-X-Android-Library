@@ -2,11 +2,12 @@ package com.webasyst.api
 
 import com.google.gson.annotations.SerializedName
 
-class ApiError(val error: String, val app: String, val description: String) : Throwable(description) {
-    constructor(error: ApiCallResponseInterface) : this(
+class ApiError(val error: String, val app: String, val description: String, cause: Throwable?) : Throwable(description, cause) {
+    constructor(error: ApiCallResponseInterface, cause: Throwable? = null) : this(
         app = error.app ?: "",
         error = error.error ?: "",
-        description = error.errorDescription ?: ""
+        description = error.errorDescription ?: "",
+        cause = cause
     )
 
     data class ApiCallResponse(
