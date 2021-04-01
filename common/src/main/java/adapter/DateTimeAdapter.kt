@@ -4,6 +4,10 @@ import android.util.Log
 import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
+import com.google.gson.JsonNull
+import com.google.gson.JsonPrimitive
+import com.google.gson.JsonSerializationContext
+import com.google.gson.JsonSerializer
 import com.webasyst.api.util.threadLocal
 import java.lang.reflect.Type
 import java.text.DateFormat
@@ -11,8 +15,10 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
-
-class DateTimeAdapter : JsonDeserializer<Calendar> {
+/**
+ * JSON adapter that supports String (yyyy-MM-DD HH:mm:ss) <-> [Calendar] conversion
+ */
+class DateTimeAdapter : JsonDeserializer<Calendar>, JsonSerializer<Calendar> {
     private val dateFormatWithTime by threadLocal<DateFormat> {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.GINGERBREAD) {
             SimpleDateFormat(DATE_FORMAT, Locale.ROOT)
@@ -33,6 +39,14 @@ class DateTimeAdapter : JsonDeserializer<Calendar> {
                 Log.w(TAG, "Failed to parse date ($json)", e)
             }
         }
+
+    override fun serialize(
+        src: Calendar?,
+        typeOfSrc: Type?,
+        context: JsonSerializationContext?
+    ): JsonElement =
+        if (src == null) JsonNull.INSTANCE
+        else JsonPrimitive(dateFormatWithTime.format(src.time))
 
     companion object {
         private const val TAG = "webasyst_api"

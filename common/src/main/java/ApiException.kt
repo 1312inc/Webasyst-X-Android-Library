@@ -2,6 +2,9 @@ package com.webasyst.api
 
 sealed class ApiException(cause: Throwable?) : RuntimeException(cause)
 
+/**
+ * Basic class for all WAID errors
+ */
 class WaidException(cause: Throwable) : ApiException(cause) {
     override val message: String
         get() = "WAID error: ${cause?.message}"

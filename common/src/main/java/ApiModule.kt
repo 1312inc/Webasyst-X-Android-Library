@@ -18,6 +18,9 @@ import io.ktor.http.ContentType
 import io.ktor.util.toByteArray
 import java.nio.charset.Charset
 
+/**
+ * Base class for all application-specific API modules
+ */
 abstract class ApiModule(
     config: ApiClientConfiguration,
     installation: Installation,
@@ -31,6 +34,9 @@ abstract class ApiModule(
     protected val urlBase = installation.urlBase
     private val joinedScope = scope.joinToString(separator = ",")
 
+    /**
+     * Configures http request - sets appropriate headers and adds "access_token" query parameter
+     */
     @CallSuper
     open suspend fun HttpRequestBuilder.configureRequest() {
         val accessToken = getToken()
@@ -38,6 +44,11 @@ abstract class ApiModule(
         accept(ContentType.Application.Json)
     }
 
+    /**
+     * Returns application [AccessToken].
+     * First tries to retrieve it from cache.
+     * If it fails requests new token and stores it in cache to be reused in further requests.
+     */
     suspend fun getToken(): AccessToken {
         try {
             val cached = tokenCache.get(url = urlBase, scope = joinedScope)
@@ -80,6 +91,13 @@ abstract class ApiModule(
         }
     }
 
+    /**
+     * GET http request wrapper.
+     *
+     *  Performs basic request configuration (with [configureRequest]), then applies [block].
+     * @param urlString request url. Make sure to call urls only within Webasyst installation
+     * as it will leak your access token otherwise.
+     */
     protected suspend inline fun <reified T> HttpClient.doGet(urlString: String, block: HttpRequestBuilder.() -> Unit = {}) = apiRequest {
         try {
             get<HttpResponse>(urlString) {
@@ -92,6 +110,13 @@ abstract class ApiModule(
         }
     }
 
+    /**
+     * POST http request wrapper.
+     *
+     * Performs basic request configuration (with [configureRequest]), then applies [block].
+     * @param urlString request url. Make sure to call urls only within Webasyst installation
+     * as it will leak your access token otherwise.
+     */
     protected suspend inline fun <reified T> HttpClient.doPost(urlString: String, block: HttpRequestBuilder.() -> Unit = {}) = apiRequest {
         post<HttpResponse>(urlString) {
             configureRequest()
@@ -104,7 +129,6 @@ abstract class ApiModule(
         try {
             return gson.fromJson(body, typeToken.type)
         } catch (e: Throwable) {
-            e.printStackTrace()
             throw ApiError(gson.fromJson(body, ApiError.ApiCallResponse::class.java))
         }
     }

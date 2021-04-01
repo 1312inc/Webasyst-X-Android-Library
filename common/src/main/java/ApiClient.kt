@@ -7,6 +7,9 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.features.json.GsonSerializer
 import io.ktor.client.features.json.JsonFeature
 
+/**
+ * This class holds collection of all configured [api module factories][ApiModuleFactory]
+ */
 class ApiClient private constructor(
     modules: Map<Class<out ApiModule>, (config: ApiClientConfiguration, waidAuthenticator: WAIDAuthenticator) -> ApiModuleFactory<ApiModule>>,
     engine: HttpClientEngine,
@@ -31,6 +34,9 @@ class ApiClient private constructor(
         }
     }
 
+    /**
+     * returns [ApiModuleFactory] for given [ApiModule] class or throws [IllegalStateException] if it is not configured
+     */
     fun <T : ApiModule> getFactory(cls: Class<T>): ApiModuleFactory<*> =
         modules[cls] ?: throw IllegalArgumentException("Factory for $cls not found")
 
