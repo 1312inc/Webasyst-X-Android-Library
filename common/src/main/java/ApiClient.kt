@@ -2,6 +2,7 @@ package com.webasyst.api
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.webasyst.api.adapter.ListAdapter
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.features.json.GsonSerializer
@@ -45,7 +46,10 @@ class ApiClient private constructor(
 
     private fun GsonBuilder.configure(
         blocks: List<GsonBuilder.() -> Unit>
-    ) = blocks.forEach(::apply)
+    ) {
+        blocks.forEach(::apply)
+        registerTypeAdapter(List::class.java, ListAdapter())
+    }
 
     class Builder {
         private val modules = mutableMapOf<Class<out ApiModule>, (config: ApiClientConfiguration, waidAuthenticator: WAIDAuthenticator) -> ApiModuleFactory<ApiModule>>()
