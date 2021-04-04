@@ -1,7 +1,5 @@
 buildscript {
     ext {
-        waid_version = '0.0.1'
-
         androidx_annotation_version = '1.1.0'
         build_tools_version = '30.0.2'
         dokka_plugin_version = '1.4.30'
