@@ -162,7 +162,7 @@ public final class WebasystAuthStateStore {
      * @param callWithCurrentState If true, call {@link Observer#onAuthStateChange(AuthState)} right away
      */
     @AnyThread
-    void addObserver(@NonNull final Observer observer, boolean callWithCurrentState) {
+    public void addObserver(@NonNull final Observer observer, boolean callWithCurrentState) {
         synchronized (observers) {
             observers.add(observer);
             if (callWithCurrentState) {
