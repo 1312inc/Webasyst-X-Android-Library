@@ -2,13 +2,23 @@ package com.webasyst.waid
 
 import com.google.gson.annotations.SerializedName
 
-data class CloudSignup(
-    @SerializedName("id")
-    val id: String,
-    @SerializedName("domain")
-    val domain: String,
-    @SerializedName("url")
-    val url: String,
-    @SerializedName("auth_endpoint")
-    val authEndpoint: String
-)
+/**
+ * Cloud signup (/id/api/v1/cloud/signup/) request
+ */
+data class CloudSignup internal constructor(
+    @SerializedName("plan_id")
+    val planId: String? = null,
+) {
+    private constructor(builder: Builder) : this(
+        planId = builder.planId,
+    )
+
+    class Builder internal constructor(
+        var planId: String? = null,
+    )
+
+    companion object {
+        operator fun invoke(build: Builder.() -> Unit): CloudSignup =
+            CloudSignup(Builder().apply(build))
+    }
+}

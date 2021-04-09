@@ -1,9 +1,12 @@
 package com.webasyst.waid
 
+import com.google.gson.Gson
+import com.webasyst.api.ApiError
 import com.webasyst.api.Response
 import com.webasyst.api.WAIDAuthenticator
 import com.webasyst.api.WaidException
 import com.webasyst.api.apiRequest
+import com.webasyst.api.util.useReader
 import com.webasyst.auth.WebasystAuthService
 import com.webasyst.auth.withFreshAccessToken
 import io.ktor.client.HttpClient
@@ -21,10 +24,12 @@ import io.ktor.client.request.url
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.jvm.javaio.copyTo
 import java.io.File
+import java.util.Calendar
 
 class WAIDClient(
     private val authService: WebasystAuthService,
@@ -36,6 +41,35 @@ class WAIDClient(
             serializer = GsonSerializer()
         }
     }
+
+    private val gson by lazy { Gson() }
+
+    /**
+     * POST /id/api/v1/cloud/extend/
+     */
+    suspend fun cloudExtend(clientId: String, expireDate: Calendar): Response<Unit> = apiRequest {
+        val res = doPost<HttpResponse>("$waidHost$CLOUD_EXTEND", CloudExtendRequest(clientId, expireDate))
+        if (res.status != HttpStatusCode.NoContent) {
+            val error: ApiError = res.content.useReader {
+                gson.fromJson(it, ApiError::class.java)
+            }
+            throw WaidException(error)
+        }
+    }
+
+    /**
+     * POST /id/api/v1/licenses/force
+     */
+    suspend fun forceLicense(clientId: String, slug: String): Response<Unit> =
+        apiRequest {
+            val res = doPost<HttpResponse>("$waidHost$FORCE_LICENSE_PATH", ForceLicenseRequest(clientId, slug))
+            if (res.status.value >= 400) {
+                val error = res.content.useReader {
+                    gson.fromJson(it, ApiError::class.java)
+                }
+                throw WaidException(error)
+            }
+        }
 
     suspend fun getInstallationList(): Response<List<Installation>> =
         apiRequest { doGet("$waidHost$INSTALLATION_LIST_PATH") }
@@ -58,6 +92,22 @@ class WAIDClient(
                     accept(ContentType.Application.Json)
                     append("Authorization", "Bearer $accessToken")
                 }
+            }
+        }
+    }
+
+    /**
+     * POST /id/api/v1/cloud/signup/
+     */
+    suspend fun postCloudSignUp(build: CloudSignup.Builder.() -> Unit): Response<CloudSignupResponse> = apiRequest {
+        authService.withFreshAccessToken { accessToken ->
+            client.post("$waidHost$CLOUD_SIGNUP_PATH") {
+                headers {
+                    accept(ContentType.Application.Json)
+                    append("Authorization", "Bearer $accessToken")
+                }
+                contentType(ContentType.Application.Json)
+                body = CloudSignup(build)
             }
         }
     }
@@ -121,7 +171,9 @@ class WAIDClient(
 
     companion object {
         private const val SIGN_OUT_PATH = "/id/api/v1/delete/"
+        private const val CLOUD_EXTEND = "/id/api/v1/cloud/extend/"
         private const val CLOUD_SIGNUP_PATH = "/id/api/v1/cloud/signup/"
+        private const val FORCE_LICENSE_PATH = "/id/api/v1/licenses/force"
         private const val INSTALLATION_LIST_PATH = "/id/api/v1/installations/"
         private const val USER_LIST_PATH = "/id/api/v1/profile/"
         private const val CLIENT_LIST_PATH = "/id/api/v1/auth/client/"

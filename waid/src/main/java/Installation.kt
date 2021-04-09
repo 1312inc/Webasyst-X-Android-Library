@@ -1,6 +1,9 @@
 package com.webasyst.waid
 
+import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
+import com.webasyst.api.adapter.DateAdapter
+import java.util.Calendar
 
 data class Installation(
     @SerializedName("id")
@@ -8,5 +11,8 @@ data class Installation(
     @SerializedName("domain")
     val domain: String,
     @SerializedName("url")
-    val url: String
+    val url: String,
+    @SerializedName("cloud_expire_date")
+    @JsonAdapter(DateAdapter::class)
+    val cloudExpireDate: Calendar?,
 )
