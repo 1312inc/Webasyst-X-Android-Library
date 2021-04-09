@@ -18,12 +18,26 @@ import java.util.Locale
 /**
  * JSON adapter that supports String (yyyy-MM-DD HH:mm:ss) <-> [Calendar] conversion
  */
-class DateTimeAdapter : JsonDeserializer<Calendar>, JsonSerializer<Calendar> {
+class DateTimeAdapter : AbstractDateAdapter(pattern = "yyyy-MM-DD HH:mm:ss")
+
+/**
+ * JSON adapter that supports String (yyyy-MM-dd) <-> [Calendar] conversion
+ */
+class DateAdapter : AbstractDateAdapter(pattern = "yyyy-MM-dd")
+
+/**
+ * Abstract Json adapter for [Calendar] class.
+ *
+ * @param pattern Time format string. See [SimpleDateFormat].
+ */
+abstract class AbstractDateAdapter internal constructor(val pattern: String) :
+    JsonDeserializer<Calendar>, JsonSerializer<Calendar>
+{
     private val dateFormatWithTime by threadLocal<DateFormat> {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.GINGERBREAD) {
-            SimpleDateFormat(DATE_FORMAT, Locale.ROOT)
+            SimpleDateFormat(pattern, Locale.ROOT)
         } else {
-            SimpleDateFormat(DATE_FORMAT)
+            SimpleDateFormat(pattern)
         }
     }
 
@@ -48,8 +62,12 @@ class DateTimeAdapter : JsonDeserializer<Calendar>, JsonSerializer<Calendar> {
         if (src == null) JsonNull.INSTANCE
         else JsonPrimitive(dateFormatWithTime.format(src.time))
 
+    /**
+     * This helper function formats [obj] with [pattern]
+     */
+    fun format(obj: Calendar) = dateFormatWithTime.format(obj.time)
+
     companion object {
         private const val TAG = "webasyst_api"
-        private const val DATE_FORMAT = "yyyy-MM-DD HH:mm:ss"
     }
 }
