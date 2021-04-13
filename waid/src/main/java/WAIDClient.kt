@@ -85,7 +85,7 @@ class WAIDClient(
             Response.failure(WaidException(e))
         }
 
-    suspend fun postCloudSignUp(): Response<CloudSignup> = apiRequest {
+    suspend fun postCloudSignUp(): Response<CloudSignupResponse> = apiRequest {
         authService.withFreshAccessToken { accessToken ->
             client.post("$waidHost$CLOUD_SIGNUP_PATH") {
                 headers {
