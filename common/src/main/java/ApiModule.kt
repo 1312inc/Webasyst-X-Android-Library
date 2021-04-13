@@ -54,12 +54,20 @@ abstract class ApiModule(
             val cached = tokenCache.get(url = urlBase, scope = joinedScope)
             if (null != cached) return cached
 
-            val authCodesResponse = waidAuthenticator.getInstallationApiAuthCodes(setOf(installationId))
-            if (authCodesResponse.isFailure()) throw authCodesResponse.getFailureCause()
+            val cachedAuthCode = tokenCache.getAuthCode(installationId)
+            val authCode = if (null != cachedAuthCode) {
+                cachedAuthCode
+            } else {
+                val authCodesResponse = waidAuthenticator.getInstallationApiAuthCodes(setOf(installationId))
+                if (authCodesResponse.isFailure()) throw authCodesResponse.getFailureCause()
 
-            val authCodes = authCodesResponse.getSuccess()
-            val authCode = authCodes[installationId]
-                ?: throw RuntimeException("Failed to obtain authorization code")
+                val authCodes = authCodesResponse.getSuccess()
+                val code = authCodes[installationId]
+                if (null != code) {
+                    tokenCache.setAuthCode(installationId, code)
+                }
+                code ?: throw RuntimeException("Failed to obtain authorization code")
+            }
 
             return getToken(urlBase, authCode)
         } catch (e: Throwable) {

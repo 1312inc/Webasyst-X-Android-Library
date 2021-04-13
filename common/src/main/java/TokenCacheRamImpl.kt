@@ -6,7 +6,16 @@ package com.webasyst.api
 class TokenCacheRamImpl(
     private val expiration: Long = TOKEN_EXPIRATION
 ) : TokenCache {
+    private val authCodes: MutableMap<String, String> = HashMap()
     private val tokens: MutableMap<Key, Token> = HashMap()
+
+    override suspend fun getAuthCode(installationId: String): String? =
+        authCodes[installationId]
+
+    override suspend fun setAuthCode(installationId: String, code: String) {
+        authCodes[installationId] = code
+    }
+
 
     override suspend fun get(url: String, scope: String): AccessToken? = synchronized(tokens) {
         val key = Key(url, scope)
