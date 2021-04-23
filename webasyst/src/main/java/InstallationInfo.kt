@@ -15,11 +15,12 @@ data class InstallationInfo(
         val mode: String,
         @SerializedName("text")
         val text: Text,
-        @SerializedName("gradient")
-        val gradient: Gradient,
         @SerializedName("two_lines")
         val twoLines: Boolean,
-
+        @SerializedName("gradient")
+        val gradient: Gradient,
+        @SerializedName("image")
+        val image: Image?,
     ) {
         data class Text(
             @SerializedName("value")
@@ -43,11 +44,43 @@ data class InstallationInfo(
             val angle: String,
         )
 
+        data class Image(
+            @SerializedName("original")
+            val original: Original,
+            @SerializedName("thumbs")
+            val thumbs: Map<String, Thumb>,
+
+        ) {
+            data class Original(
+                @SerializedName("path")
+                val path: String,
+                @SerializedName("name")
+                val name: String,
+                @SerializedName("ext")
+                val ext: String,
+                @SerializedName("ts")
+                val ts: Int,
+                @SerializedName("url")
+                val url: String,
+            )
+
+            data class Thumb(
+                @SerializedName("path")
+                val path: String,
+                @SerializedName("ts")
+                val ts: Int,
+                @SerializedName("url")
+                val url: String,
+            )
+        }
+
+
         companion object {
             @Retention(AnnotationRetention.SOURCE)
-            @StringDef(LOGO_MODE_GRADIENT)
+            @StringDef(LOGO_MODE_GRADIENT, LOGO_MODE_IMAGE)
             annotation class LogoMode
             const val LOGO_MODE_GRADIENT = "gradient"
+            const val LOGO_MODE_IMAGE = "image"
         }
     }
 }
