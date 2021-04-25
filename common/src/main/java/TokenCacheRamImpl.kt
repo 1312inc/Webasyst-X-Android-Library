@@ -33,6 +33,7 @@ class TokenCacheRamImpl(
     }
 
     override suspend fun clear() = synchronized(tokens) {
+        authCodes.clear()
         tokens.clear()
     }
 
