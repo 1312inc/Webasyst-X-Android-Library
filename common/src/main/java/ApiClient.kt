@@ -12,6 +12,7 @@ import io.ktor.client.features.json.JsonFeature
  * This class holds collection of all configured [api module factories][ApiModuleFactory]
  */
 class ApiClient private constructor(
+    override val clientId: String,
     modules: Map<Class<out ApiModule>, (config: ApiClientConfiguration, waidAuthenticator: WAIDAuthenticator) -> ApiModuleFactory<ApiModule>>,
     engine: HttpClientEngine,
     override val tokenCache: TokenCache,
@@ -53,6 +54,7 @@ class ApiClient private constructor(
 
     class Builder {
         private val modules = mutableMapOf<Class<out ApiModule>, (config: ApiClientConfiguration, waidAuthenticator: WAIDAuthenticator) -> ApiModuleFactory<ApiModule>>()
+        var clientId: String = ""
         var waidAuthenticator: WAIDAuthenticator? = null
         var httpClientEngine: HttpClientEngine? = null
         var tokenCache: TokenCache = TokenCacheRamImpl()
@@ -62,6 +64,7 @@ class ApiClient private constructor(
         }
 
         fun build(): ApiClient = ApiClient(
+            clientId = clientId,
             modules = modules,
             waidAuthenticator = waidAuthenticator ?: throw IllegalStateException("WAID authenticator must be set"),
             engine = httpClientEngine ?: throw IllegalStateException("HttpClientEngine must be set"),
@@ -71,6 +74,11 @@ class ApiClient private constructor(
 
     companion object {
         operator fun invoke(block: Builder.() -> Unit): ApiClient =
-            Builder().apply(block).build()
+            Builder()
+                .apply(block)
+                .also { builder ->
+                    require(builder.clientId.isNotEmpty()) { "client_id must not be empty" }
+                }
+                .build()
     }
 }

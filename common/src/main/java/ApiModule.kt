@@ -33,6 +33,7 @@ abstract class ApiModule(
     private val installationId = installation.id
     protected val urlBase = installation.urlBase
     private val joinedScope = scope.joinToString(separator = ",")
+    private val clientId = config.clientId
 
     /**
      * Configures http request - sets appropriate headers and adds "access_token" query parameter
@@ -84,7 +85,7 @@ abstract class ApiModule(
                 body = MultiPartFormDataContent(formData {
                     append("code", authCode)
                     append("scope", joinedScope)
-                    append("client_id", "com.webasyst.x")
+                    append("client_id", clientId)
                 })
             }
 
