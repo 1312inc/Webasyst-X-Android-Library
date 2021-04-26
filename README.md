@@ -25,7 +25,7 @@ dependencies {
     def webasyst_version = '0.0.2'
     // Authentication module. Used in log in process.
     implementation "com.webasyst:auth-kt:$webasyst_version"
-    // WAID api client
+    // Webasyst ID (WAID) api client
     implementation "com.webasyst:waid:$webasyst_version"
     // Webasyst client - used to retrieve basic installation data
     implementation "com.webasyst:webasyst:$webasyst_version"
@@ -50,7 +50,7 @@ Note the comment on `<data android:scheme=` key
 </activity>
 ```
 
-3. Configure WAID client. This should be done once, preferably early in application's lifecycle. The recommended option is to extend `Application` class and do configuration in it's `onCreate()` method.
+3. Configure Webasyst ID (WAID) client. This should be done once, preferably early in application's lifecycle. The recommended option is to extend `Application` class and do configuration in it's `onCreate()` method.
 See `WebasystAuthService.configure()` for details.
 
 4. Implement Authentication Activity.
