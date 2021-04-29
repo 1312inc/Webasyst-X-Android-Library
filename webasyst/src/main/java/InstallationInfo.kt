@@ -1,7 +1,9 @@
 package com.webasyst.api.webasyst
 
 import android.support.annotation.StringDef
+import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
+import com.webasyst.api.adapter.FailSafeAdapterFactory
 
 data class InstallationInfo(
     @SerializedName("name")
@@ -19,6 +21,7 @@ data class InstallationInfo(
         val twoLines: Boolean,
         @SerializedName("gradient")
         val gradient: Gradient,
+        @JsonAdapter(FailSafeAdapterFactory::class)
         @SerializedName("image")
         val image: Image?,
     ) {
@@ -45,8 +48,9 @@ data class InstallationInfo(
         )
 
         data class Image(
+            @JsonAdapter(FailSafeAdapterFactory::class)
             @SerializedName("original")
-            val original: Original,
+            val original: Original?,
             @SerializedName("thumbs")
             val thumbs: Map<String, Thumb>,
 

@@ -56,4 +56,6 @@ dependencies {
     def ktor_version='1.4.0'
     implementation "io.ktor:ktor-client-android:$ktor_version"
     implementation "io.ktor:ktor-client-gson:$ktor_version"
+
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 }
