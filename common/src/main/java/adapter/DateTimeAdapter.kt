@@ -16,9 +16,9 @@ import java.util.Calendar
 import java.util.Locale
 
 /**
- * JSON adapter that supports String (yyyy-MM-DD HH:mm:ss) <-> [Calendar] conversion
+ * JSON adapter that supports String (yyyy-MM-dd HH:mm:ss) <-> [Calendar] conversion
  */
-class DateTimeAdapter : AbstractDateAdapter(pattern = "yyyy-MM-DD HH:mm:ss")
+class DateTimeAdapter : AbstractDateAdapter(pattern = "yyyy-MM-dd HH:mm:ss")
 
 /**
  * JSON adapter that supports String (yyyy-MM-dd) <-> [Calendar] conversion
