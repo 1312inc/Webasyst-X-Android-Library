@@ -16,6 +16,8 @@ class SiteApiClient(
     installation = installation,
     waidAuthenticator = waidAuthenticator,
 ) {
+    override val appName get() = SCOPE
+
     suspend fun getDomainList(): Response<Domains> = apiRequest {
         return client.doGet("$urlBase/api.php/site.domain.getList")
     }

@@ -3,7 +3,6 @@ package com.webasyst.api
 import androidx.annotation.CallSuper
 import com.google.gson.reflect.TypeToken
 import io.ktor.client.HttpClient
-import io.ktor.client.features.ClientRequestException
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.request.forms.MultiPartFormDataContent
@@ -13,7 +12,6 @@ import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.readText
 import io.ktor.http.ContentType
 import io.ktor.util.toByteArray
 import java.nio.charset.Charset
@@ -26,6 +24,7 @@ abstract class ApiModule(
     installation: Installation,
     private val waidAuthenticator: WAIDAuthenticator,
 ) {
+    abstract val appName: String
     protected val client = config.httpClient
     protected val gson = config.gson
     private val tokenCache = config.tokenCache
@@ -72,7 +71,17 @@ abstract class ApiModule(
 
             return getToken(urlBase, authCode)
         } catch (e: Throwable) {
-            throw TokenException(e)
+            if (e is WebasystException) {
+                throw e
+            } else {
+                throw WebasystException(
+                    webasystCode = WebasystException.UNRECOGNIZED_ERROR,
+                    webasystMessage = "A error occurred while obtaining access token",
+                    webasystApp = appName,
+                    webasystHost = urlBase,
+                    cause = e,
+                )
+            }
         }
     }
 
@@ -91,12 +100,23 @@ abstract class ApiModule(
 
             val token = gson.fromJson(response, AccessToken::class.java)
             if (token.error != null) {
-                throw TokenError(token)
+                throw WebasystException(
+                    webasystCode = token.error,
+                    webasystMessage = token.errorDescription ?: "",
+                    webasystApp = appName,
+                    webasystHost = urlBase,
+                )
             }
             tokenCache.set(url, joinedScope, token)
             return token
         } catch (e: Throwable) {
-            throw TokenException(e)
+            throw WebasystException(
+                webasystCode = WebasystException.UNRECOGNIZED_ERROR,
+                webasystMessage = "A error occurred while obtaining access token",
+                webasystApp = appName,
+                webasystHost = urlBase,
+                cause = e,
+            )
         }
     }
 
@@ -108,14 +128,25 @@ abstract class ApiModule(
      * as it will leak your access token otherwise.
      */
     protected suspend inline fun <reified T> HttpClient.doGet(urlString: String, block: HttpRequestBuilder.() -> Unit = {}) = apiRequest {
+        var response: HttpResponse? = null
         try {
-            get<HttpResponse>(urlString) {
+            response = get<HttpResponse>(urlString) {
                 configureRequest()
                 apply(block)
-            }.parse(object : TypeToken<T>() {})
-        } catch (e: ClientRequestException) {
-            val body = e.response.readText(Charset.forName("UTF-8"))
-            throw ApiError(gson.fromJson(body, ApiError.ApiCallResponse::class.java), e)
+            }
+            response.parse(object : TypeToken<T>() {})
+        } catch (e: Throwable) {
+            if (null != response) {
+                throw WebasystException(response, e, appName, urlBase,)
+            } else {
+                throw WebasystException(
+                    webasystCode = WebasystException.ERROR_CONNECTION_FAILED,
+                    webasystMessage = "Failed to connect to $urlBase",
+                    webasystApp = appName,
+                    webasystHost = urlBase,
+                    cause = e
+                )
+            }
         }
     }
 
@@ -138,7 +169,7 @@ abstract class ApiModule(
         try {
             return gson.fromJson(body, typeToken.type)
         } catch (e: Throwable) {
-            throw ApiError(gson.fromJson(body, ApiError.ApiCallResponse::class.java))
+            throw WebasystException(this, e, appName, urlBase,)
         }
     }
 
