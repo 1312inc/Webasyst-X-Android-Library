@@ -1,6 +1,7 @@
 package com.webasyst.waid
 
 import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 import com.webasyst.api.ApiError
 import com.webasyst.api.Response
 import com.webasyst.api.WAIDAuthenticator
@@ -15,6 +16,7 @@ import io.ktor.client.features.json.GsonSerializer
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.request.accept
 import io.ktor.client.request.delete
+import io.ktor.client.request.forms.FormDataContent
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
@@ -25,6 +27,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.Parameters
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.jvm.javaio.copyTo
@@ -112,6 +115,64 @@ class WAIDClient(
         }
     }
 
+    suspend fun postAuthCode(clientId: String, scope: String, locale: String, email: String?, phone: String?): HeadlessCodeRequestResult {
+        if (email != null && phone != null) {
+            throw IllegalArgumentException("Either email or phone must be set. Not both.")
+        }
+        if (email == null && phone == null) {
+            throw IllegalArgumentException("Either email or phone must be set")
+        }
+        val codeChallenge = CodeChallenge()
+        val response = apiRequest {
+            client.post<String>("$waidHost$HEADLESS_CODE_PATH") {
+                body = FormDataContent(Parameters.build {
+                    append("client_id", clientId)
+                    append("code_challenge", codeChallenge.encoded)
+                    append("code_challenge_method", codeChallenge.challengeMethod)
+                    append("scope", scope)
+                    append("locale", locale)
+                    if (null != email) {
+                        append("email", email)
+                    }
+                    if (null != phone) {
+                        append("phone", phone)
+                    }
+                })
+            }
+        }
+        if (response.isSuccess()) {
+            val postAuthCodeResponse = gson.fromJson(response.getSuccess(), PostAuthCodeResponse::class.java)
+            return HeadlessCodeRequestResult(
+                nextRequestAllowedAt = postAuthCodeResponse.nextRequestAllowedAt,
+                codeChallenge = codeChallenge,
+            )
+        } else {
+            throw response.getFailureCause()
+        }
+    }
+    private class PostAuthCodeResponse(
+        @SerializedName("next_request_allowed_at")
+        val nextRequestAllowedAt: Long,
+    )
+
+    suspend fun postHeadlessToken(clientId: String, codeVerifier: String, code: String): String {
+        val response = apiRequest {
+            client.post<String>("$waidHost$HEADLESS_TOKEN_PATH") {
+                body = FormDataContent(Parameters.build {
+                    append("client_id", clientId)
+                    append("code_verifier", codeVerifier)
+                    append("code", code)
+                })
+            }
+        }
+
+        if (response.isSuccess()) {
+            return response.getSuccess()
+        } else {
+            throw response.getFailureCause()
+        }
+    }
+
     suspend fun downloadUserpic(url: String, file: File): Unit =
         downloadFile(url, file)
 
@@ -177,5 +238,7 @@ class WAIDClient(
         private const val INSTALLATION_LIST_PATH = "/id/api/v1/installations/"
         private const val USER_LIST_PATH = "/id/api/v1/profile/"
         private const val CLIENT_LIST_PATH = "/id/api/v1/auth/client/"
+        private const val HEADLESS_CODE_PATH = "/id/oauth2/auth/headless/code/"
+        private const val HEADLESS_TOKEN_PATH = "/id/oauth2/auth/headless/token/"
     }
 }
