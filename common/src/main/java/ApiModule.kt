@@ -16,8 +16,6 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.readText
 import io.ktor.http.ContentType
 import io.ktor.util.toByteArray
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.nio.charset.Charset
 
 /**
@@ -52,7 +50,7 @@ abstract class ApiModule(
      * First tries to retrieve it from cache.
      * If it fails requests new token and stores it in cache to be reused in further requests.
      */
-    suspend fun getToken(): AccessToken = tokenLock.withLock {
+    suspend fun getToken(): AccessToken {
         try {
             val cached = tokenCache.get(url = urlBase, scope = joinedScope)
             if (null != cached) return cached
@@ -146,7 +144,5 @@ abstract class ApiModule(
 
     companion object {
         const val ACCESS_TOKEN = "access_token"
-
-        private val tokenLock = Mutex()
     }
 }
