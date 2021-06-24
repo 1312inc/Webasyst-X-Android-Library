@@ -17,6 +17,9 @@ buildscript {
 
 android {
     compileSdkVersion target_sdk_version
+    defaultConfig {
+        minSdkVersion 8
+    }
 }
 
 group = GROUP
