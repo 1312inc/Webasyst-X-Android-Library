@@ -1,6 +1,5 @@
 package com.webasyst.waid
 
-import android.util.Base64
 import java.security.MessageDigest
 import kotlin.random.Random
 
@@ -13,19 +12,25 @@ class CodeChallenge(
 
     init {
         password = randomString(length = length)
+        encoded = password
+        challengeMethod = CHALLENGE_METHOD_PLAIN
+        /*
+        // TODO: SHA256 disabled
         var challengeMethod = CHALLENGE_METHOD_PLAIN
         encoded = try {
             val hash = password.computeHash()
+            val encodedPassword = Base64.encodeToString(hash, Base64.URL_SAFE)
             challengeMethod = CHALLENGE_METHOD_SHA265
-            hash
+            encodedPassword
         } catch (e: Throwable) {
             password
-        }.toBase64()
+        }
         this.challengeMethod = challengeMethod
+         */
     }
 
     private fun randomString(
-        charPool: List<Char> = ('a'..'z') + ('0'..'9'),// + '-' + '.' + '_' + '~',
+        charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9'),
         length: Int = 64,
     ): String = (1..length)
         .map { Random.nextInt(0, charPool.size) }
@@ -35,18 +40,12 @@ class CodeChallenge(
     /**
      * Computes SHA256 hash of given String
      */
-    private fun String.computeHash(): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        digest.reset()
-        digest.update(encodeToByteArray())
-        val bytes = digest.digest(encodeToByteArray())
-        return bytes.joinToString(separator = "") {
-            ((it.toInt() and 0xff) + 0x100).toString(16).substring(1)
+    private fun String.computeHash(): ByteArray =
+        MessageDigest.getInstance("SHA-256").let { digest ->
+            digest.reset()
+            digest.update(encodeToByteArray())
+            digest.digest(encodeToByteArray())
         }
-    }
-
-    private fun String.toBase64() =
-        Base64.encodeToString(this.toByteArray(), Base64.NO_WRAP)
 
     companion object {
         const val CHALLENGE_METHOD_PLAIN = "plain"
