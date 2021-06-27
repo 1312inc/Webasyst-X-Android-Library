@@ -31,11 +31,13 @@ import io.ktor.http.Parameters
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.jvm.javaio.copyTo
+import net.openid.appauth.TokenRequest
+import net.openid.appauth.TokenResponse
 import java.io.File
 import java.util.Calendar
 
 class WAIDClient(
-    private val authService: WebasystAuthService,
+    public val authService: WebasystAuthService,
     engine: HttpClientEngine,
     private val waidHost: String,
 ) : WAIDAuthenticator {
@@ -155,9 +157,9 @@ class WAIDClient(
         val nextRequestAllowedAt: Long,
     )
 
-    suspend fun postHeadlessToken(clientId: String, codeVerifier: String, code: String): String {
+    suspend fun postHeadlessToken(clientId: String, codeVerifier: String, code: String): HeadlessTokenResponse {
         val response = apiRequest {
-            client.post<String>("$waidHost$HEADLESS_TOKEN_PATH") {
+            client.post<HeadlessTokenResponse>("$waidHost$HEADLESS_TOKEN_PATH") {
                 body = FormDataContent(Parameters.build {
                     append("client_id", clientId)
                     append("code_verifier", codeVerifier)
@@ -172,6 +174,19 @@ class WAIDClient(
             throw response.getFailureCause()
         }
     }
+    fun tokenResponseFromHeadlessRequest(res: HeadlessTokenResponse) =
+        TokenResponse
+            .Builder(
+                TokenRequest
+                    .Builder(authService.authServiceConfiguration, authService.configuration.clientId)
+                    .setGrantType("true_sign_in")
+                    .build()
+            )
+            .setAccessToken(res.accessToken)
+            .setAccessTokenExpiresIn(res.expiresIn)
+            .setRefreshToken(res.refreshToken)
+            .setTokenType(res.tokenType)
+            .build()
 
     suspend fun downloadUserpic(url: String, file: File): Unit =
         downloadFile(url, file)

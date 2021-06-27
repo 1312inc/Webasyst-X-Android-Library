@@ -20,8 +20,8 @@ public class WebasystAuthService {
     private static final String TAG = "WA_AUTH_SERVICE";
 
     private final WebasystAuthStateStore stateStore;
-    private final WebasystAuthConfiguration configuration;
-    private final AuthorizationServiceConfiguration authServiceConfiguration;
+    public final WebasystAuthConfiguration configuration;
+    public final AuthorizationServiceConfiguration authServiceConfiguration;
     private final AuthorizationService authorizationService;
 
     @Nullable

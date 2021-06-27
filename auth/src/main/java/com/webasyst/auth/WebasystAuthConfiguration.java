@@ -14,7 +14,7 @@ import java.util.Set;
  */
 public class WebasystAuthConfiguration {
     /** Application's id. TODO: add add information on creating new application */
-    final String clientId;
+    public final String clientId;
     /** Authentication URL */
     final Uri authEndpoint;
     /** Token URL */

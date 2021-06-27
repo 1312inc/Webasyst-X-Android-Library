@@ -69,7 +69,7 @@ public final class WebasystAuthStateStore {
     @NonNull
     public final AuthState getCurrent() {
         final AuthState currentState = currentStateRef.get();
-        if (null != currentState) {
+         if (null != currentState) {
             Log.d(TAG, "Returning current state from memory: " + displayState(currentState));
             return currentState;
         }
@@ -114,8 +114,8 @@ public final class WebasystAuthStateStore {
     }
 
     @NonNull
-    AuthState updateAfterTokenResponse(@Nullable final TokenResponse response,
-                                       @Nullable final AuthorizationException exception) {
+    public AuthState updateAfterTokenResponse(@Nullable final TokenResponse response,
+                                              @Nullable final AuthorizationException exception) {
         try {
             final Field accessTokenExpirationTime = TokenResponse.class.getDeclaredField("accessTokenExpirationTime");
             accessTokenExpirationTime.set(response, System.currentTimeMillis() + TOKEN_EXPIRATION_OVERRIDE);
