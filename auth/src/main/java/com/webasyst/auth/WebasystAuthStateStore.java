@@ -17,7 +17,6 @@ import net.openid.appauth.TokenResponse;
 
 import org.json.JSONException;
 
-import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -101,12 +100,6 @@ public final class WebasystAuthStateStore {
     @NonNull
     AuthState updateAfterAuthorization(@Nullable final AuthorizationResponse response,
                                        @Nullable final AuthorizationException exception) {
-        try {
-            final Field accessTokenExpirationTime = AuthorizationResponse.class.getDeclaredField("accessTokenExpirationTime");
-            accessTokenExpirationTime.set(response, System.currentTimeMillis() + TOKEN_EXPIRATION_OVERRIDE);
-        } catch (Exception e) {
-            Log.i(TAG, "Failed to override token expiration time", e);
-        }
         final AuthState current = getCurrent();
         current.update(response, exception);
         Log.d(TAG, "State updated after authorization: " + displayState(current));
@@ -116,12 +109,6 @@ public final class WebasystAuthStateStore {
     @NonNull
     public AuthState updateAfterTokenResponse(@Nullable final TokenResponse response,
                                               @Nullable final AuthorizationException exception) {
-        try {
-            final Field accessTokenExpirationTime = TokenResponse.class.getDeclaredField("accessTokenExpirationTime");
-            accessTokenExpirationTime.set(response, System.currentTimeMillis() + TOKEN_EXPIRATION_OVERRIDE);
-        } catch (Exception e) {
-            Log.i(TAG, "Failed to override token expiration time", e);
-        }
         final AuthState current = getCurrent();
         current.update(response, exception);
         Log.d(TAG, "State updated after token response: " + displayState(current));
