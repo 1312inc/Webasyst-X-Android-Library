@@ -17,6 +17,8 @@ class WebasystApiClient(
     installation = installation,
     waidAuthenticator = waidAuthenticator,
 ) {
+    override val appName get() = SCOPE
+
     suspend fun getInstallationInfo(): Response<InstallationInfo> = apiRequest {
         client.get("$urlBase/api.php/webasyst.getInfo") { configureRequest() }
     }

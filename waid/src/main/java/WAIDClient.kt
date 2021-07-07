@@ -1,13 +1,12 @@
 package com.webasyst.waid
 
-import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
-import com.webasyst.api.ApiError
+import com.google.gson.reflect.TypeToken
 import com.webasyst.api.Response
 import com.webasyst.api.WAIDAuthenticator
-import com.webasyst.api.WaidException
+import com.webasyst.api.WebasystException
 import com.webasyst.api.apiRequest
-import com.webasyst.api.util.useReader
+import com.webasyst.api.util.GsonInstance
 import com.webasyst.auth.WebasystAuthService
 import com.webasyst.auth.withFreshAccessToken
 import io.ktor.client.HttpClient
@@ -24,6 +23,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.request
 import io.ktor.client.request.url
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.readText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -34,6 +34,7 @@ import io.ktor.utils.io.jvm.javaio.copyTo
 import net.openid.appauth.TokenRequest
 import net.openid.appauth.TokenResponse
 import java.io.File
+import java.nio.charset.Charset
 import java.util.Calendar
 
 class WAIDClient(
@@ -47,7 +48,7 @@ class WAIDClient(
         }
     }
 
-    private val gson by lazy { Gson() }
+    private val gson by GsonInstance
 
     /**
      * POST /id/api/v1/cloud/extend/
@@ -55,10 +56,12 @@ class WAIDClient(
     suspend fun cloudExtend(clientId: String, expireDate: Calendar): Response<Unit> = apiRequest {
         val res = doPost<HttpResponse>("$waidHost$CLOUD_EXTEND", CloudExtendRequest(clientId, expireDate))
         if (res.status != HttpStatusCode.NoContent) {
-            val error: ApiError = res.content.useReader {
-                gson.fromJson(it, ApiError::class.java)
-            }
-            throw WaidException(error)
+            throw WebasystException(
+                response = res,
+                cause = null,
+                webasystApp = "",
+                webasystHost = "",
+            )
         }
     }
 
@@ -69,10 +72,12 @@ class WAIDClient(
         apiRequest {
             val res = doPost<HttpResponse>("$waidHost$FORCE_LICENSE_PATH", ForceLicenseRequest(clientId, slug))
             if (res.status.value >= 400) {
-                val error = res.content.useReader {
-                    gson.fromJson(it, ApiError::class.java)
-                }
-                throw WaidException(error)
+                throw WebasystException(
+                    response = res,
+                    cause = null,
+                    webasystApp = "",
+                    webasystHost = "",
+                )
             }
         }
 
@@ -82,13 +87,36 @@ class WAIDClient(
     suspend fun getUserInfo(): Response<UserInfo> =
         apiRequest { doGet("$waidHost$USER_LIST_PATH") }
 
-    override suspend fun getInstallationApiAuthCodes(appClientIDs: Set<String>): Response<Map<String, String>> =
-        try {
-            val r = doPost<Map<String, String>>("$waidHost$CLIENT_LIST_PATH", ClientTokenRequest(appClientIDs))
+    override suspend fun getInstallationApiAuthCodes(appClientIDs: Set<String>): Response<Map<String, String>> {
+        var res: HttpResponse? = null
+        return try {
+            res = doPost<HttpResponse>("$waidHost$CLIENT_LIST_PATH", ClientTokenRequest(appClientIDs))
+            val r = gson.fromJson<Map<String, String>>(
+                res.readText(Charset.forName("Utf-8")),
+                (object : TypeToken<Map<String, String>>() {}).type
+            )
             Response.success(r)
         } catch (e: Throwable) {
-            Response.failure(WaidException(e))
+            Response.failure(
+                if (null != res) {
+                    WebasystException(
+                        response = res,
+                        cause = null,
+                        webasystApp = "",
+                        webasystHost = "",
+                    )
+                } else {
+                    WebasystException(
+                        WebasystException.ERROR_CONNECTION_FAILED,
+                        "",
+                        "",
+                        "",
+                        e
+                    )
+                }
+            )
         }
+    }
 
     suspend fun postCloudSignUp(): Response<CloudSignupResponse> = apiRequest {
         authService.withFreshAccessToken { accessToken ->
