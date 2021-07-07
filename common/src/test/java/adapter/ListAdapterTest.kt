@@ -1,16 +1,13 @@
 package adapter
 
-import com.google.gson.GsonBuilder
-import com.webasyst.api.adapter.ListAdapter
+import com.webasyst.api.util.GsonInstance
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ListAdapterTest {
     @Test
     fun testListAdapter() {
-        val gson = GsonBuilder().apply {
-            registerTypeAdapter(List::class.java, ListAdapter())
-        }.create()
+        val gson by GsonInstance
 
         val reference = Container(listOf(Container.Item("a"), Container.Item("b")))
 

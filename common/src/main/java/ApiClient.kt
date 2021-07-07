@@ -1,8 +1,6 @@
 package com.webasyst.api
 
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import com.webasyst.api.adapter.ListAdapter
+import com.webasyst.api.util.GsonInstance
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.features.json.GsonSerializer
@@ -23,15 +21,11 @@ class ApiClient private constructor(
 
     override val scope = this.modules
         .map { (_, factory) -> factory.scope }
-    override val gson: Gson = GsonBuilder()
-        .apply {
-            configure(this@ApiClient.modules.mapNotNull { (_, factory) -> factory.gsonConfigurator })
-        }
-        .create()
+    override val gson by GsonInstance
     override val httpClient = HttpClient(engine) {
         install(JsonFeature) {
             serializer = GsonSerializer {
-                configure(this@ApiClient.modules.mapNotNull { (_, factory) -> factory.gsonConfigurator })
+                this.apply(GsonInstance::configureGsonBuilder)
             }
         }
     }
@@ -41,16 +35,6 @@ class ApiClient private constructor(
      */
     fun <T : ApiModule> getFactory(cls: Class<T>): ApiModuleFactory<*> =
         modules[cls] ?: throw IllegalArgumentException("Factory for $cls not found")
-
-    fun configure(gsonBuilder: GsonBuilder) =
-        gsonBuilder.configure(this@ApiClient.modules.mapNotNull { (_, factory) -> factory.gsonConfigurator })
-
-    private fun GsonBuilder.configure(
-        blocks: List<GsonBuilder.() -> Unit>
-    ) {
-        blocks.forEach(::apply)
-        registerTypeAdapter(List::class.java, ListAdapter())
-    }
 
     class Builder {
         private val modules = mutableMapOf<Class<out ApiModule>, (config: ApiClientConfiguration, waidAuthenticator: WAIDAuthenticator) -> ApiModuleFactory<ApiModule>>()

@@ -7,9 +7,11 @@ import kotlin.reflect.KProperty
 
 object GsonInstance {
     private val gson by lazy {
-        GsonBuilder()
-            .registerTypeAdapter(List::class.java, ListAdapter())
-            .create()
+        GsonBuilder().apply(::configureGsonBuilder).create()
+    }
+
+    fun configureGsonBuilder(builder: GsonBuilder) {
+        builder.registerTypeAdapter(List::class.java, ListAdapter())
     }
 
     operator fun getValue(thisRef: Any?, property: KProperty<*>): Gson = gson
