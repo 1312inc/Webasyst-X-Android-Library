@@ -1,14 +1,5 @@
-package adapter
+package com.webasyst.api
 
-import com.webasyst.api.ApiClient
-import com.webasyst.api.ApiClientConfiguration
-import com.webasyst.api.ApiModule
-import com.webasyst.api.Installation
-import com.webasyst.api.Response
-import com.webasyst.api.TokenCacheRamImpl
-import com.webasyst.api.WAIDAuthenticator
-import com.webasyst.api.WebasystException
-import com.webasyst.api.apiRequest
 import com.webasyst.api.util.GsonInstance
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -69,8 +60,15 @@ class ApiClientTest {
             try {
                 apiModule.getToken()
             } catch (e: Throwable) {
-                assertTrue(e is WebasystException, "Thrown exception should be an instance of WebasystException")
-                assertEquals(WebasystException.ERROR_DISABLED, e.webasystCode, "Error code should be ${WebasystException.ERROR_DISABLED}")
+                assertTrue(
+                    e is WebasystException,
+                    "Thrown exception should be an instance of WebasystException"
+                )
+                assertEquals(
+                    WebasystException.ERROR_DISABLED,
+                    e.webasystCode,
+                    "Error code should be ${WebasystException.ERROR_DISABLED}"
+                )
             }
         }
     }

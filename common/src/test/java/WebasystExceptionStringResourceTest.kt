@@ -1,4 +1,4 @@
-package adapter
+package com.webasyst.api
 
 import org.junit.Test
 import java.util.ResourceBundle

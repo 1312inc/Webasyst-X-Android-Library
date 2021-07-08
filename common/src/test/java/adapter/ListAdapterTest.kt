@@ -1,4 +1,4 @@
-package adapter
+package com.webasyst.api.adapter
 
 import com.webasyst.api.util.GsonInstance
 import kotlin.test.Test
