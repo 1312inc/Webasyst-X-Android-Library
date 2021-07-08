@@ -22,13 +22,7 @@ class ApiClient private constructor(
     override val scope = this.modules
         .map { (_, factory) -> factory.scope }
     override val gson by GsonInstance
-    override val httpClient = HttpClient(engine) {
-        install(JsonFeature) {
-            serializer = GsonSerializer {
-                this.apply(GsonInstance::configureGsonBuilder)
-            }
-        }
-    }
+    override val httpClient = createHttpClient(engine)
 
     /**
      * returns [ApiModuleFactory] for given [ApiModule] class or throws [IllegalStateException] if it is not configured
@@ -64,5 +58,17 @@ class ApiClient private constructor(
                     require(builder.clientId.isNotEmpty()) { "client_id must not be empty" }
                 }
                 .build()
+
+        /**
+         * Creates [HttpClient]. Extracted for testing purposes.
+         */
+        fun createHttpClient(engine: HttpClientEngine) = HttpClient(engine) {
+            install(JsonFeature) {
+                serializer = GsonSerializer {
+                    this.apply(GsonInstance::configureGsonBuilder)
+                }
+            }
+            expectSuccess = false
+        }
     }
 }

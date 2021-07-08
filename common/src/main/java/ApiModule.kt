@@ -12,8 +12,8 @@ import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.readText
 import io.ktor.http.ContentType
-import io.ktor.util.toByteArray
 import java.nio.charset.Charset
 
 /**
@@ -86,8 +86,9 @@ abstract class ApiModule(
     }
 
     protected suspend fun getToken(url: String, authCode: String): AccessToken {
+        var response: HttpResponse? = null
         try {
-            val response = client.post<String>("$url/api.php/token-headless") {
+            response = client.post<HttpResponse>("$url/api.php/token-headless") {
                 headers {
                     accept(ContentType.Application.Json)
                 }
@@ -98,7 +99,8 @@ abstract class ApiModule(
                 })
             }
 
-            val token = gson.fromJson(response, AccessToken::class.java)
+            val token = response.parse(object : TypeToken<AccessToken>() {})
+
             if (token.error != null) {
                 throw WebasystException(
                     webasystCode = token.error,
@@ -110,13 +112,22 @@ abstract class ApiModule(
             tokenCache.set(url, joinedScope, token)
             return token
         } catch (e: Throwable) {
-            throw WebasystException(
-                webasystCode = WebasystException.UNRECOGNIZED_ERROR,
-                webasystMessage = "A error occurred while obtaining access token",
-                webasystApp = appName,
-                webasystHost = urlBase,
-                cause = e,
-            )
+            if (null != response) {
+                throw WebasystException(
+                    response = response,
+                    cause = e,
+                    webasystApp = appName,
+                    webasystHost = urlBase,
+                )
+            } else {
+                throw WebasystException(
+                    webasystCode = WebasystException.UNRECOGNIZED_ERROR,
+                    webasystMessage = "A error occurred while obtaining access token",
+                    webasystApp = appName,
+                    webasystHost = urlBase,
+                    cause = e,
+                )
+            }
         }
     }
 
@@ -165,7 +176,7 @@ abstract class ApiModule(
     }
 
     protected suspend fun <T> HttpResponse.parse(typeToken: TypeToken<T>): T {
-        val body = content.toByteArray().toString(Charset.forName("UTF8"))
+        val body = this.readText(Charset.forName("UTF8"))
         try {
             return gson.fromJson(body, typeToken.type)
         } catch (e: Throwable) {

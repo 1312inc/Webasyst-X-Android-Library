@@ -50,6 +50,8 @@ class WebasystException(
         const val ERROR_CONNECTION_FAILED = "connection_failed"
         /** Application not installed */
         const val ERROR_APP_NOT_INSTALLED = "app_not_installed"
+        /** Api is disabled altogether */
+        const val ERROR_DISABLED = "disabled"
 
         val errorCodes = mapOf(
             UNRECOGNIZED_ERROR to "webasyst_error_generic",
@@ -57,6 +59,7 @@ class WebasystException(
             ERROR_CODE_INVALID_CLIENT to "waid_error_invalid_client",
             ERROR_CONNECTION_FAILED to "webasyst_error_connection_failed",
             ERROR_APP_NOT_INSTALLED to "webasyst_error_app_not_installed",
+            ERROR_DISABLED to "disabled",
         )
     }
 }
