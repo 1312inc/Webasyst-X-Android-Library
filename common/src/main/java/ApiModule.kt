@@ -147,16 +147,19 @@ abstract class ApiModule(
             }
             response.parse(object : TypeToken<T>() {})
         } catch (e: Throwable) {
-            if (null != response) {
-                throw WebasystException(response, e, appName, urlBase,)
-            } else {
-                throw WebasystException(
-                    webasystCode = WebasystException.ERROR_CONNECTION_FAILED,
-                    webasystMessage = "Failed to connect to $urlBase",
-                    webasystApp = appName,
-                    webasystHost = urlBase,
-                    cause = e
-                )
+            when {
+                e is WebasystException ->
+                    throw e
+                null != response ->
+                    throw WebasystException(response, e, appName, urlBase)
+                else ->
+                    throw WebasystException(
+                        webasystCode = WebasystException.ERROR_CONNECTION_FAILED,
+                        webasystMessage = "Failed to connect to $urlBase",
+                        webasystApp = appName,
+                        webasystHost = urlBase,
+                        cause = e
+                    )
             }
         }
     }
@@ -169,13 +172,36 @@ abstract class ApiModule(
      * as it will leak your access token otherwise.
      */
     protected suspend inline fun <reified T> HttpClient.doPost(urlString: String, block: HttpRequestBuilder.() -> Unit = {}) = apiRequest {
-        post<HttpResponse>(urlString) {
-            configureRequest()
-            apply(block)
-        }.parse(object : TypeToken<T>() {})
+        var response: HttpResponse? = null
+        try {
+            response = post<HttpResponse>(urlString) {
+                configureRequest()
+                apply(block)
+            }
+            response.parse(object : TypeToken<T>() {})
+        } catch (e: Throwable) {
+            when {
+                e is WebasystException ->
+                    throw e
+                null != response ->
+                    throw WebasystException(response, e, appName, urlBase)
+                else ->
+                    throw WebasystException(
+                        webasystCode = WebasystException.ERROR_CONNECTION_FAILED,
+                        webasystMessage = "Failed to connect to $urlBase",
+                        webasystApp = appName,
+                        webasystHost = urlBase,
+                        cause = e
+                    )
+            }
+        }
     }
 
     protected suspend fun <T> HttpResponse.parse(typeToken: TypeToken<T>): T {
+        if (status.value >= 400) {
+            throw WebasystException(this, null, appName, urlBase)
+        }
+
         val body = this.readText(Charset.forName("UTF8"))
         try {
             return gson.fromJson(body, typeToken.type)
