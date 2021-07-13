@@ -16,6 +16,10 @@ class WebasystException(
      * Returned message is suitable for display to the user.
      */
     override fun getLocalizedMessage(): String {
+        if (webasystCode == ERROR_CODE_INVALID_CLIENT) {
+            return webasystMessage
+        }
+
         val locale = Locale.getDefault()
         val stringResources = ResourceBundle.getBundle("strings", locale)
         val key =
