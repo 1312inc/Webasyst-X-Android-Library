@@ -20,6 +20,9 @@ version = VERSION_NAME
 
 android {
     compileSdkVersion target_sdk_version
+    defaultConfig {
+        minSdkVersion 9
+    }
 }
 
 repositories {

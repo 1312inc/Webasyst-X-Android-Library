@@ -18,8 +18,11 @@ class WebasystException(
     override fun getLocalizedMessage(): String {
         val locale = Locale.getDefault()
         val stringResources = ResourceBundle.getBundle("strings", locale)
+        val key =
+            if (stringResources.containsKey(errorCodes[webasystCode])) errorCodes[webasystCode]
+            else errorCodes[UNRECOGNIZED_ERROR]
         return stringResources
-            .getString("webasyst_error_connection_failed")
+            .getString(key)
             .format(webasystApp, webasystHost)
     }
 
@@ -59,7 +62,7 @@ class WebasystException(
             ERROR_CODE_INVALID_CLIENT to "waid_error_invalid_client",
             ERROR_CONNECTION_FAILED to "webasyst_error_connection_failed",
             ERROR_APP_NOT_INSTALLED to "webasyst_error_app_not_installed",
-            ERROR_DISABLED to "disabled",
+            ERROR_DISABLED to "webasyst_error_disabled",
         )
     }
 }
