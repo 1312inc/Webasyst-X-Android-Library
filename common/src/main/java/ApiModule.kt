@@ -80,6 +80,7 @@ abstract class ApiModule(
                     webasystApp = appName,
                     webasystHost = urlBase,
                     cause = e,
+                    responseBody = null,
                 )
             }
         }
@@ -107,6 +108,7 @@ abstract class ApiModule(
                     webasystMessage = token.errorDescription ?: "",
                     webasystApp = appName,
                     webasystHost = urlBase,
+                    responseBody = null,
                 )
             }
             tokenCache.set(url, joinedScope, token)
@@ -126,6 +128,7 @@ abstract class ApiModule(
                     webasystApp = appName,
                     webasystHost = urlBase,
                     cause = e,
+                    responseBody = null,
                 )
             }
         }
@@ -158,7 +161,8 @@ abstract class ApiModule(
                         webasystMessage = "Failed to connect to $urlBase",
                         webasystApp = appName,
                         webasystHost = urlBase,
-                        cause = e
+                        cause = e,
+                        responseBody = null,
                     )
             }
         }
@@ -191,7 +195,8 @@ abstract class ApiModule(
                         webasystMessage = "Failed to connect to $urlBase",
                         webasystApp = appName,
                         webasystHost = urlBase,
-                        cause = e
+                        cause = e,
+                        responseBody = null,
                     )
             }
         }

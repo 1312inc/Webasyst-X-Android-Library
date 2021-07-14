@@ -9,6 +9,7 @@ class WebasystException(
     val webasystMessage: String,
     val webasystApp: String,
     val webasystHost: String,
+    val responseBody: String?,
     cause: Throwable? = null,
 ) : Throwable(webasystMessage, cause) {
     /**
@@ -44,6 +45,7 @@ class WebasystException(
                 webasystApp = webasystApp,
                 webasystHost = webasystHost,
                 cause = cause,
+                responseBody = error.body,
             )
         }
 

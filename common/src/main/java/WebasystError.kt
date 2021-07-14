@@ -10,12 +10,14 @@ import java.nio.charset.Charset
 /**
  * Webasyst error response
  */
-class WebasystError(
+class WebasystError private constructor(
     @SerializedName("error")
     val code: String,
     @SerializedName("error_description")
     val message: String,
 ) {
+    var body: String? = null
+        private set
     lateinit var httpCode: HttpStatusCode
         private set
 
@@ -26,7 +28,7 @@ class WebasystError(
          * Creates new [WebasystError] instance from given [HttpResponse]
          */
         suspend operator fun invoke(res: HttpResponse): WebasystError {
-            val body: String
+            var body: String? = null
             return try {
                 body = res.readText(Charset.forName("UTF-8"))
                 gson.fromJson(body, WebasystError::class.java)
@@ -34,6 +36,7 @@ class WebasystError(
                 WebasystError(code = WebasystException.ERROR_INVALID_ERROR_OBJECT, message = "Malformed error received from server.")
             }.also {
                 it.httpCode = res.status
+                it.body = body
             }
         }
     }
