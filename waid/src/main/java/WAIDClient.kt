@@ -158,6 +158,7 @@ class WAIDClient(
             client.post<String>("$waidHost$HEADLESS_CODE_PATH") {
                 body = FormDataContent(Parameters.build {
                     append("client_id", clientId)
+                    append("device_id", authService.configuration.deviceId)
                     append("code_challenge", codeChallenge.encoded)
                     append("code_challenge_method", codeChallenge.challengeMethod)
                     append("scope", scope)
@@ -191,6 +192,7 @@ class WAIDClient(
             client.post<HeadlessTokenResponse>("$waidHost$HEADLESS_TOKEN_PATH") {
                 body = FormDataContent(Parameters.build {
                     append("client_id", clientId)
+                    append("device_id", authService.configuration.deviceId)
                     append("code_verifier", codeVerifier)
                     append("code", code)
                 })

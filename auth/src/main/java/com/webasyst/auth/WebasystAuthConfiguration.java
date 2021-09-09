@@ -15,6 +15,8 @@ import java.util.Set;
 public class WebasystAuthConfiguration {
     /** Application's id. TODO: add add information on creating new application */
     public final String clientId;
+    /** Device ID */
+    public final String deviceId;
     /** Authentication URL */
     final Uri authEndpoint;
     /** Token URL */
@@ -26,6 +28,7 @@ public class WebasystAuthConfiguration {
 
     private WebasystAuthConfiguration(final Builder builder) {
         clientId = builder.clientId;
+        deviceId = builder.deviceId;
         authEndpoint = Uri.parse(builder.authEndpoint);
         tokenEndpoint = Uri.parse(builder.tokenEndpoint);
         callbackUri = Uri.parse(builder.callbackUri);
@@ -37,6 +40,7 @@ public class WebasystAuthConfiguration {
      */
     public static class Builder {
         private @Nullable String clientId = null;
+        private @Nullable String deviceId = null;
         private @Nullable String authEndpoint = null;
         private @Nullable String tokenEndpoint = null;
         private @Nullable String callbackUri = null;
@@ -45,6 +49,7 @@ public class WebasystAuthConfiguration {
         Builder(@Nullable WebasystAuthConfiguration configuration) {
             if (null != configuration) {
                 clientId = configuration.clientId;
+                deviceId = configuration.deviceId;
                 authEndpoint = configuration.authEndpoint.toString();
                 tokenEndpoint = configuration.tokenEndpoint.toString();
                 callbackUri = configuration.callbackUri.toString();
@@ -53,6 +58,10 @@ public class WebasystAuthConfiguration {
 
         public void setClientId(@NonNull String clientId) {
             this.clientId = clientId;
+        }
+
+        public void setDeviceId(@NonNull String deviceId) {
+            this.deviceId = deviceId;
         }
 
         /**
@@ -86,6 +95,7 @@ public class WebasystAuthConfiguration {
          */
         public WebasystAuthConfiguration build() throws IllegalStateException {
             if (null == this.clientId) throw new IllegalStateException("Client ID must be set");
+            if (null == this.deviceId) throw new IllegalStateException("Device ID must be set");
             if (null == this.authEndpoint) throw new IllegalStateException("Auth endpoint must be set");
             if (null == this.tokenEndpoint) throw new IllegalStateException("Token endpoint must be set");
             if (null == this.callbackUri) throw new IllegalStateException("Callback url must be set");

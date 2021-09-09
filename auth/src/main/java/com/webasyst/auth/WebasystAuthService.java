@@ -16,13 +16,20 @@ import net.openid.appauth.CodeVerifierUtil;
 import net.openid.appauth.ResponseTypeValues;
 import net.openid.appauth.TokenRequest;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class WebasystAuthService {
     private static final String TAG = "WA_AUTH_SERVICE";
+
+    private static final String DEVICE_ID_PARAM = "device_id";
 
     private final WebasystAuthStateStore stateStore;
     public final WebasystAuthConfiguration configuration;
     public final AuthorizationServiceConfiguration authServiceConfiguration;
     private final AuthorizationService authorizationService;
+
+    private final Map<String, String> additionalParams;
 
     @Nullable
     static WebasystAuthConfiguration currentConfiguration = null;
@@ -36,6 +43,8 @@ public class WebasystAuthService {
             configuration.tokenEndpoint
         );
         authorizationService = new AuthorizationService(context);
+        additionalParams = new HashMap();
+        additionalParams.put(DEVICE_ID_PARAM, configuration.deviceId);
     }
 
     public static WebasystAuthService getInstance(@NonNull final Context context) {
@@ -62,6 +71,7 @@ public class WebasystAuthService {
     }
 
     void performTokenRequest(TokenRequest request) {
+        request.additionalParameters.put(DEVICE_ID_PARAM, configuration.deviceId);
         authorizationService.performTokenRequest(request, stateStore::updateAfterTokenResponse);
     }
 
@@ -78,7 +88,9 @@ public class WebasystAuthService {
      */
     public <T> void withFreshAccessToken(final AccessTokenTask<T> task, @Nullable final Consumer<T> callback) {
         Log.d(TAG, "Running task with fresh token...");
-        stateStore.getCurrent().performActionWithFreshTokens(authorizationService,
+        stateStore.getCurrent().performActionWithFreshTokens(
+            authorizationService,
+            additionalParams,
             (accessToken, idToken, exception) -> {
                 stateStore.writeCurrent();
                 if (exception != null) {
@@ -100,6 +112,7 @@ public class WebasystAuthService {
      * @param cancelled {@link PendingIntent} to be called upon sign in cancellation
      */
     public void signIn(AuthorizationRequest request, PendingIntent success, PendingIntent cancelled) {
+        request.additionalParameters.put(DEVICE_ID_PARAM, configuration.deviceId);
         getAuthorizationService().performAuthorizationRequest(request, success, cancelled);
     }
 
