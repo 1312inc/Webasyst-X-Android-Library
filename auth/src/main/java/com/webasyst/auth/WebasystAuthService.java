@@ -71,8 +71,17 @@ public class WebasystAuthService {
     }
 
     void performTokenRequest(TokenRequest request) {
-        request.additionalParameters.put(DEVICE_ID_PARAM, configuration.deviceId);
-        authorizationService.performTokenRequest(request, stateStore::updateAfterTokenResponse);
+        TokenRequest actualRequest = new TokenRequest
+            .Builder(request.configuration, request.clientId)
+            .setAdditionalParameters(additionalParams)
+            .setGrantType(request.grantType)
+            .setRedirectUri(request.redirectUri)
+            .setScope(request.scope)
+            .setAuthorizationCode(request.authorizationCode)
+            .setRefreshToken(request.refreshToken)
+            .setCodeVerifier(request.codeVerifier)
+            .build();
+        authorizationService.performTokenRequest(actualRequest, stateStore::updateAfterTokenResponse);
     }
 
     /**
@@ -112,8 +121,18 @@ public class WebasystAuthService {
      * @param cancelled {@link PendingIntent} to be called upon sign in cancellation
      */
     public void signIn(AuthorizationRequest request, PendingIntent success, PendingIntent cancelled) {
-        request.additionalParameters.put(DEVICE_ID_PARAM, configuration.deviceId);
-        getAuthorizationService().performAuthorizationRequest(request, success, cancelled);
+        final AuthorizationRequest actualRequest = new AuthorizationRequest
+            .Builder(request.configuration, request.clientId, request.responseType, request.redirectUri)
+            .setAdditionalParameters(additionalParams)
+            .setDisplay(request.display)
+            .setLoginHint(request.loginHint)
+            .setPrompt(request.prompt)
+            .setScope(request.scope)
+            .setState(request.state)
+            .setCodeVerifier(request.codeVerifier, request.codeVerifierChallenge, request.codeVerifierChallengeMethod)
+            .setResponseMode(request.responseMode)
+            .build();
+        getAuthorizationService().performAuthorizationRequest(actualRequest, success, cancelled);
     }
 
     /**
