@@ -7,10 +7,12 @@ import com.webasyst.api.adapter.FailSafeAdapterFactory
 
 data class InstallationInfo(
     @SerializedName("name")
-    val name: String,
+    private val _name: String?,
     @SerializedName("logo")
     val logo: Logo?
 ) {
+    val name: String get() = _name ?: ""
+
     data class Logo(
         @LogoMode
         @SerializedName("mode")
