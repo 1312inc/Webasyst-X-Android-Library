@@ -224,13 +224,17 @@ class WAIDClient(
 
     suspend fun signOut(): Response<Unit> = apiRequest {
         authService.withFreshAccessToken { accessToken ->
-            client.delete("$waidHost$SIGN_OUT_PATH") {
-                headers {
-                    append("Authorization", "Bearer $accessToken")
-                }
-            }
+            signOut(accessToken)
         }
     }
+
+    suspend fun signOut(accessToken: String): Response<Unit> =
+        client.delete("$waidHost$SIGN_OUT_PATH") {
+            headers {
+                append("Authorization", "Bearer $accessToken")
+            }
+        }
+
 
     private suspend inline fun <reified T> doGet(url: String, params: Map<String, String>? = null): T =
         authService.withFreshAccessToken { accessToken ->
@@ -286,5 +290,13 @@ class WAIDClient(
         private const val CLIENT_LIST_PATH = "/id/api/v1/auth/client/"
         private const val HEADLESS_CODE_PATH = "/id/oauth2/auth/headless/code/"
         private const val HEADLESS_TOKEN_PATH = "/id/oauth2/auth/headless/token/"
+
+        suspend fun signOut(httpClient: HttpClient, waidHost: String, accessToken: String): Response<String> = apiRequest {
+            httpClient.delete("$waidHost$SIGN_OUT_PATH") {
+                headers {
+                    append("Authorization", "Bearer $accessToken")
+                }
+            }
+        }
     }
 }
