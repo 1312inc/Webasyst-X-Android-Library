@@ -89,7 +89,7 @@ public final class WebasystAuthStateStore {
      * @return the new {@link AuthState}
      */
     @NonNull
-    AuthState replace(@NonNull final AuthState state) {
+    public AuthState replace(@NonNull final AuthState state) {
         Log.d(TAG, "Replacing current state with " + displayState(state));
         writeState(state);
         currentStateRef.set(state);
