@@ -25,4 +25,18 @@ class WebasystExceptionStringResourceTest {
             }
         }
     }
+
+    @Test
+    fun `test that WebasystException_getLocalizedMessage() does not throw NPE if webasystCode is unrecognized`() {
+        val e = WebasystException(
+            webasystCode = "abracadabra",
+            webasystMessage = "",
+            webasystApp = "app",
+            webasystHost = "example.com",
+            responseBody = null,
+            cause = null,
+        )
+
+        e.localizedMessage
+    }
 }

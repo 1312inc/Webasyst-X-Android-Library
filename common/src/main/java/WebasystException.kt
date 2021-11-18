@@ -23,8 +23,9 @@ class WebasystException(
 
         val locale = Locale.getDefault()
         val stringResources = ResourceBundle.getBundle("strings", locale)
+        val code = errorCodes[webasystCode] ?: errorCodes[UNRECOGNIZED_ERROR]
         val key =
-            if (stringResources.containsKey(errorCodes[webasystCode])) errorCodes[webasystCode]
+            if (stringResources.containsKey(code)) code
             else errorCodes[UNRECOGNIZED_ERROR]
         return stringResources
             .getString(key)
