@@ -1,6 +1,6 @@
 package com.webasyst.api.webasyst
 
-import android.support.annotation.StringDef
+import androidx.annotation.StringDef
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 import com.webasyst.api.adapter.FailSafeAdapterFactory
