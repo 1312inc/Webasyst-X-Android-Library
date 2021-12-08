@@ -19,7 +19,8 @@ import net.openid.appauth.TokenRequest;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class WebasystAuthService {
     private static final String TAG = "WA_AUTH_SERVICE";
@@ -98,41 +99,43 @@ public class WebasystAuthService {
      * This variant if {@link #withFreshAccessToken} calls the callback upon task completion.
      */
     public <T> void withFreshAccessToken(final AccessTokenTask<T> task, @Nullable final Consumer<T> callback) {
-        Log.d(TAG, "Running task with fresh token...");
-        final AuthState authState = stateStore.getCurrent();
-        AuthorizationException authorizationException = null;
-        try {
-            withFreshAccessToken(authState, task, callback);
-        } catch (AuthorizationException exception) {
-            authorizationException = exception;
-        } finally {
-            if (null != authorizationException) {
-                Log.w(TAG, "Caught exception in withFreshToken()", authorizationException);
-                if (authorizationException.code >= 2000) {
-                    stateStore.replace(new AuthState());
-                } else {
-                    stateStore.writeCurrent();
+        synchronized (stateStore) {
+            Log.d(TAG, "Running task with fresh token...");
+            final AuthState authState = stateStore.getCurrent();
+            AuthorizationException authorizationException = null;
+            try {
+                withFreshAccessToken(authState, task, callback);
+            } catch (AuthorizationException exception) {
+                authorizationException = exception;
+            } finally {
+                if (null != authorizationException) {
+                    Log.w(TAG, "Caught exception in withFreshToken()", authorizationException);
                 }
-            } else {
                 stateStore.writeCurrent();
             }
         }
     }
 
-    public <T> void withFreshAccessToken(final AuthState authState, final AccessTokenTask<T> task, @Nullable final Consumer<T> callback) throws AuthorizationException {
-        AtomicReference<AuthorizationException> authorizationExceptionRef = new AtomicReference<>(null);
+    private <T> void withFreshAccessToken(final AuthState authState, final AccessTokenTask<T> task, @Nullable final Consumer<T> callback) throws AuthorizationException {
+        final BlockingQueue<Optional<AuthorizationException>> queue = new LinkedBlockingQueue<>(1);
+
         authState.performActionWithFreshTokens(
             authorizationService,
             additionalParams,
             (accessToken, idToken, exception) -> {
-                authorizationExceptionRef.set(exception);
+                queue.add(Optional.ofNullable(exception));
                 final T result = task.apply(accessToken, exception);
                 if (null != callback) callback.accept(result);
             }
         );
-        final AuthorizationException authorizationException = authorizationExceptionRef.get();
-        if (null != authorizationException) {
-            throw authorizationException;
+
+        try {
+            final Optional<AuthorizationException> authorizationException = queue.take();
+            if (authorizationException.isPresent()) {
+                throw authorizationException.get();
+            }
+        } catch (InterruptedException e) {
+            // NOOP is OK
         }
     }
 

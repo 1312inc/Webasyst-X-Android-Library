@@ -20,6 +20,7 @@ import org.json.JSONException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This singleton class holds the reference to current {@link AuthState}
@@ -36,12 +37,14 @@ public final class WebasystAuthStateStore {
     private static final Long TOKEN_EXPIRATION_OVERRIDE = 1000L * 60 * 60 * 24 * 365;
 
     private final SharedPreferences preferences;
+    private final ReentrantLock preferencesLock;
     private final AtomicReference<AuthState> currentStateRef;
     private final Handler mainThreadHandler;
     private final Set<Observer> observers;
 
     private WebasystAuthStateStore(Context context) {
         preferences = context.getSharedPreferences(STORE_NAME, Context.MODE_PRIVATE);
+        preferencesLock = new ReentrantLock();
         mainThreadHandler = new Handler(context.getMainLooper());
         observers = new HashSet<>();
         currentStateRef = new AtomicReference<>();
@@ -98,7 +101,7 @@ public final class WebasystAuthStateStore {
     }
 
     @NonNull
-    AuthState updateAfterAuthorization(@Nullable final AuthorizationResponse response,
+    public AuthState updateAfterAuthorization(@Nullable final AuthorizationResponse response,
                                        @Nullable final AuthorizationException exception) {
         final AuthState current = getCurrent();
         current.update(response, exception);
@@ -117,34 +120,44 @@ public final class WebasystAuthStateStore {
 
     @NonNull
     private AuthState readState() {
-        final String currentState = preferences.getString(STATE_KEY, null);
-        if (currentState == null) {
-            Log.d(TAG, "Persisted state not found. Returning empty state from readState()");
-            return new AuthState();
-        }
-
+        preferencesLock.lock();
         try {
-            final AuthState newState = AuthState.jsonDeserialize(currentState);
-            Log.d(TAG, "Restored state from persistent storage: " + displayState(newState));
-            return newState;
-        } catch (JSONException e) {
-            Log.w(TAG, "Failed to deserialize stored auth state - discarding", e);
-            return new AuthState();
+            final String currentState = preferences.getString(STATE_KEY, null);
+            if (currentState == null) {
+                Log.d(TAG, "Persisted state not found. Returning empty state from readState()");
+                return new AuthState();
+            }
+
+            try {
+                final AuthState newState = AuthState.jsonDeserialize(currentState);
+                Log.d(TAG, "Restored state from persistent storage: " + displayState(newState));
+                return newState;
+            } catch (JSONException e) {
+                Log.w(TAG, "Failed to deserialize stored auth state - discarding", e);
+                return new AuthState();
+            }
+        } finally {
+            preferencesLock.unlock();
         }
     }
 
     private void writeState(@Nullable final AuthState state) {
-        final SharedPreferences.Editor editor = preferences.edit();
+        preferencesLock.lock();
         try {
-            if (null == state) {
-                Log.d(TAG, "Removing state from persistent storage");
-                editor.remove(STATE_KEY);
-            } else {
-                Log.d(TAG, "Saving state to persistent storage: " + displayState(state));
-                editor.putString(STATE_KEY, state.jsonSerializeString());
+            final SharedPreferences.Editor editor = preferences.edit();
+            try {
+                if (null == state) {
+                    Log.d(TAG, "Removing state from persistent storage");
+                    editor.remove(STATE_KEY);
+                } else {
+                    Log.d(TAG, "Saving state to persistent storage: " + displayState(state));
+                    editor.putString(STATE_KEY, state.jsonSerializeString());
+                }
+            } finally {
+                editor.commit();
             }
         } finally {
-            editor.apply();
+            preferencesLock.unlock();
         }
     }
 
