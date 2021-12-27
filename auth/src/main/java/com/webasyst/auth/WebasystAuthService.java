@@ -17,8 +17,6 @@ import net.openid.appauth.CodeVerifierUtil;
 import net.openid.appauth.ResponseTypeValues;
 import net.openid.appauth.TokenRequest;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -32,7 +30,7 @@ public class WebasystAuthService {
     public final AuthorizationServiceConfiguration authServiceConfiguration;
     private final AuthorizationService authorizationService;
 
-    private final Map<String, String> additionalParams;
+//    private final Map<String, String> additionalParams;
 
     @Nullable
     static WebasystAuthConfiguration currentConfiguration = null;
@@ -46,8 +44,8 @@ public class WebasystAuthService {
             configuration.tokenEndpoint
         );
         authorizationService = new AuthorizationService(context);
-        additionalParams = new HashMap();
-        additionalParams.put(DEVICE_ID_PARAM, configuration.deviceId);
+//        additionalParams = new HashMap();
+//        additionalParams.put(DEVICE_ID_PARAM, configuration.deviceId);
     }
 
     public static WebasystAuthService getInstance(@NonNull final Context context) {
@@ -76,7 +74,7 @@ public class WebasystAuthService {
     void performTokenRequest(TokenRequest request) {
         TokenRequest actualRequest = new TokenRequest
             .Builder(request.configuration, request.clientId)
-            .setAdditionalParameters(additionalParams)
+//            .setAdditionalParameters(additionalParams)
             .setGrantType(request.grantType)
             .setRedirectUri(request.redirectUri)
             .setScope(request.scope)
@@ -121,7 +119,7 @@ public class WebasystAuthService {
 
         authState.performActionWithFreshTokens(
             authorizationService,
-            additionalParams,
+//            additionalParams,
             (accessToken, idToken, exception) -> {
                 queue.add(Optional.ofNullable(exception));
                 final T result = task.apply(accessToken, exception);
@@ -149,7 +147,7 @@ public class WebasystAuthService {
     public void signIn(AuthorizationRequest request, PendingIntent success, PendingIntent cancelled) {
         final AuthorizationRequest actualRequest = new AuthorizationRequest
             .Builder(request.configuration, request.clientId, request.responseType, request.redirectUri)
-            .setAdditionalParameters(additionalParams)
+//            .setAdditionalParameters(additionalParams)
             .setDisplay(request.display)
             .setLoginHint(request.loginHint)
             .setPrompt(request.prompt)
