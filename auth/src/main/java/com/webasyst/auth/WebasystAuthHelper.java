@@ -97,8 +97,8 @@ public class WebasystAuthHelper {
     }
 
     private int intentFlags() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            return PendingIntent.FLAG_IMMUTABLE;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            return PendingIntent.FLAG_MUTABLE;
         } else {
             return  0;
         }
