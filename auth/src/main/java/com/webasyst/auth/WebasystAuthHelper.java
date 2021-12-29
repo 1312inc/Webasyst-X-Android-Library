@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -82,7 +83,7 @@ public class WebasystAuthHelper {
         if (null != discoveryDoc) {
             intent.putExtra(EXTRA_AUTH_SERVICE_DISCOVERY, discoveryDoc.docJson.toString());
         }
-        return PendingIntent.getActivity(context, request.hashCode(), intent, 0);
+        return PendingIntent.getActivity(context, request.hashCode(), intent, intentFlags());
     }
 
     private PendingIntent createAuthorizationCancelIntent(
@@ -92,6 +93,14 @@ public class WebasystAuthHelper {
         final Context context = contextRef.get();
         final Intent intent = new Intent(context, activityClass);
         intent.setAction(ACTION_AFTER_AUTHORIZATION_CANCELLED);
-        return PendingIntent.getActivity(context, request.hashCode(), intent, 0);
+        return PendingIntent.getActivity(context, request.hashCode(), intent, intentFlags());
+    }
+
+    private int intentFlags() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return PendingIntent.FLAG_IMMUTABLE;
+        } else {
+            return  0;
+        }
     }
 }
