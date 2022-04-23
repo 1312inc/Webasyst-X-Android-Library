@@ -24,6 +24,13 @@ class WebasystError private constructor(
     companion object {
         private val gson by GsonInstance
 
+        private class NullableWebasystError(
+            @SerializedName("error")
+            val code: String?,
+            @SerializedName("error_description")
+            val message: String?,
+        )
+
         /**
          * Creates new [WebasystError] instance from given [HttpResponse]
          */
@@ -31,7 +38,15 @@ class WebasystError private constructor(
             var body: String? = null
             return try {
                 body = res.readText(Charset.forName("UTF-8"))
-                gson.fromJson(body, WebasystError::class.java)
+                val error = gson.fromJson(body, NullableWebasystError::class.java)
+                val code = error.code
+                var message = error.message
+                if (code == null) {
+                    throw IllegalStateException()
+                } else if (message == null) {
+                    message = code
+                }
+                WebasystError(code = code, message = message)
             } catch (e: Throwable) {
                 WebasystError(code = WebasystException.ERROR_INVALID_ERROR_OBJECT, message = "Malformed error received from server.")
             }.also {
