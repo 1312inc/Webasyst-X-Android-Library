@@ -62,6 +62,8 @@ class WebasystException(
         const val ERROR_APP_NOT_INSTALLED = "app_not_installed"
         /** Api is disabled altogether */
         const val ERROR_DISABLED = "disabled"
+        /** Account suspended */
+        const val ERROR_ACCOUNT_SUSPENDED = "account_suspended"
 
         val errorCodes = mapOf(
             UNRECOGNIZED_ERROR to "webasyst_error_generic",

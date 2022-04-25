@@ -5,8 +5,6 @@ import com.webasyst.api.ApiModule
 import com.webasyst.api.Installation
 import com.webasyst.api.Response
 import com.webasyst.api.WAIDAuthenticator
-import com.webasyst.api.apiRequest
-import io.ktor.client.request.get
 
 class WebasystApiClient(
     config: ApiClientConfiguration,
@@ -19,9 +17,8 @@ class WebasystApiClient(
 ) {
     override val appName get() = SCOPE
 
-    suspend fun getInstallationInfo(): Response<InstallationInfo> = apiRequest {
-        client.get("$urlBase/api.php/webasyst.getInfo") { configureRequest() }
-    }
+    suspend fun getInstallationInfo(): Response<InstallationInfo> =
+        get("$urlBase/api.php/webasyst.getInfo")
 
     companion object {
         const val SCOPE = "webasyst"

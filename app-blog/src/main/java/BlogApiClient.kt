@@ -23,7 +23,7 @@ class BlogApiClient(
     override val appName get() = SCOPE
 
     suspend fun getPosts(): Response<Posts> = apiRequest {
-        return client.doGet("$urlBase/api.php/blog.post.search") {
+        return get("$urlBase/api.php/blog.post.search") {
             parameter("limit", 10)
             parameter("hash", "author")
             headers {

@@ -2,18 +2,19 @@ package com.webasyst.api
 
 import androidx.annotation.CallSuper
 import com.google.gson.reflect.TypeToken
-import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
-import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.request
+import io.ktor.client.request.url
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.readText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpMethod
 import java.nio.charset.Charset
 
 /**
@@ -25,7 +26,7 @@ abstract class ApiModule(
     private val waidAuthenticator: WAIDAuthenticator,
 ) {
     abstract val appName: String
-    protected val client = config.httpClient
+    private val client = config.httpClient
     protected val gson = config.gson
     private val tokenCache = config.tokenCache
     protected val scope = config.scope
@@ -141,14 +142,34 @@ abstract class ApiModule(
      * @param urlString request url. Make sure to call urls only within Webasyst installation
      * as it will leak your access token otherwise.
      */
-    protected suspend inline fun <reified T> HttpClient.doGet(urlString: String, block: HttpRequestBuilder.() -> Unit = {}) = apiRequest {
+    protected suspend inline fun <reified T> get(urlString: String, crossinline block: HttpRequestBuilder.() -> Unit = {}): Response<T> = apiRequest {
+        request {
+            method = HttpMethod.Get
+            url(urlString)
+            apply(block)
+        }
+    }
+
+    /**
+     * POST http request wrapper.
+     *
+     * Performs basic request configuration (with [configureRequest]), then applies [block].
+     * @param urlString request url. Make sure to call urls only within Webasyst installation
+     * as it will leak your access token otherwise.
+     */
+    protected suspend inline fun <reified T> post(urlString: String, crossinline block: HttpRequestBuilder.() -> Unit = {}): Response<T> = apiRequest {
+        request {
+            method = HttpMethod.Post
+            url(urlString)
+            apply(block)
+        }
+    }
+
+    protected suspend inline fun <reified T> request(noinline block: HttpRequestBuilder.() -> Unit): T {
         var response: HttpResponse? = null
         try {
-            response = get<HttpResponse>(urlString) {
-                configureRequest()
-                apply(block)
-            }
-            response.parse(object : TypeToken<T>() {})
+            response = performRequest(block)
+            return response.parse(object : TypeToken<T>() {})
         } catch (e: Throwable) {
             when {
                 e is WebasystException ->
@@ -168,39 +189,11 @@ abstract class ApiModule(
         }
     }
 
-    /**
-     * POST http request wrapper.
-     *
-     * Performs basic request configuration (with [configureRequest]), then applies [block].
-     * @param urlString request url. Make sure to call urls only within Webasyst installation
-     * as it will leak your access token otherwise.
-     */
-    protected suspend inline fun <reified T> HttpClient.doPost(urlString: String, block: HttpRequestBuilder.() -> Unit = {}) = apiRequest {
-        var response: HttpResponse? = null
-        try {
-            response = post<HttpResponse>(urlString) {
-                configureRequest()
-                apply(block)
-            }
-            response.parse(object : TypeToken<T>() {})
-        } catch (e: Throwable) {
-            when {
-                e is WebasystException ->
-                    throw e
-                null != response ->
-                    throw WebasystException(response, e, appName, urlBase)
-                else ->
-                    throw WebasystException(
-                        webasystCode = WebasystException.ERROR_CONNECTION_FAILED,
-                        webasystMessage = "Failed to connect to $urlBase",
-                        webasystApp = appName,
-                        webasystHost = urlBase,
-                        cause = e,
-                        responseBody = null,
-                    )
-            }
+    protected suspend fun performRequest(block: HttpRequestBuilder.() -> Unit): HttpResponse =
+        client.request {
+            apply(block)
+            configureRequest()
         }
-    }
 
     protected suspend fun <T> HttpResponse.parse(typeToken: TypeToken<T>): T {
         if (status.value >= 400) {

@@ -19,7 +19,7 @@ class SiteApiClient(
     override val appName get() = SCOPE
 
     suspend fun getDomainList(): Response<Domains> = apiRequest {
-        return client.doGet("$urlBase/api.php/site.domain.getList")
+        return get("$urlBase/api.php/site.domain.getList")
     }
 
     companion object {

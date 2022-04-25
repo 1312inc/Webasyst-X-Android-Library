@@ -20,7 +20,7 @@ class ShopApiClient(
     override val appName get() = SCOPE
 
     suspend fun getOrders(): Response<OrderList> = apiRequest {
-        return client.doGet("$urlBase/api.php/shop.order.search") {
+        return get("$urlBase/api.php/shop.order.search") {
             parameter("limit", 10)
         }
     }
