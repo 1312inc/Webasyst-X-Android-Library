@@ -15,6 +15,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.readText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
+import io.ktor.http.contentType
 import java.nio.charset.Charset
 
 /**
@@ -159,6 +160,7 @@ abstract class ApiModule(
      */
     protected suspend inline fun <reified T> post(urlString: String, crossinline block: HttpRequestBuilder.() -> Unit = {}): Response<T> = apiRequest {
         request {
+            contentType(ContentType.Application.Json)
             method = HttpMethod.Post
             url(urlString)
             apply(block)
