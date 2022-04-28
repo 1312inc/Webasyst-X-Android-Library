@@ -5,13 +5,25 @@ import java.util.ResourceBundle
 import kotlin.test.assertTrue
 
 class WebasystExceptionStringResourceTest {
+    private val noFallbackBundleControl = ResourceBundle.Control.getNoFallbackControl(ResourceBundle.Control.FORMAT_PROPERTIES)
+    private val bundleNames = listOf(
+        "strings",
+        "strings_ru",
+    )
+
+    @Test
+    fun `test that all error messages are available`() {
+        val bundle = ResourceBundle.getBundle(bundleNames.first(), noFallbackBundleControl)
+        WebasystException
+            .errorCodes
+            .values
+            .forEach { key ->
+                assertTrue(bundle.containsKey(key), "[${bundle.baseBundleName}.properties] does not contain $key")
+            }
+    }
+
     @Test
     fun `test that error messages are available in all locales`() {
-        val noFallbackBundleControl = ResourceBundle.Control.getNoFallbackControl(ResourceBundle.Control.FORMAT_PROPERTIES)
-        val bundleNames = listOf(
-            "strings",
-            "strings_ru",
-        )
         val bundles = bundleNames.map { name ->
             ResourceBundle.getBundle(name, noFallbackBundleControl)
         }
@@ -33,6 +45,7 @@ class WebasystExceptionStringResourceTest {
             webasystMessage = "",
             webasystApp = "app",
             webasystHost = "example.com",
+            responseStatusCode = null,
             responseBody = null,
             cause = null,
         )

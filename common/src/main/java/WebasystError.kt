@@ -34,7 +34,14 @@ class WebasystError private constructor(
         /**
          * Creates new [WebasystError] instance from given [HttpResponse]
          */
-        suspend operator fun invoke(res: HttpResponse): WebasystError {
+        suspend operator fun invoke(res: HttpResponse?): WebasystError {
+            if (null == res) {
+                return WebasystError(
+                    WebasystException.ERROR_CONNECTION_FAILED,
+                    "Connection failed"
+                )
+            }
+
             var body: String? = null
             return try {
                 body = res.readText(Charset.forName("UTF-8"))

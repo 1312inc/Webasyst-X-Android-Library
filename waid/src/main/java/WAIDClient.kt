@@ -98,23 +98,12 @@ class WAIDClient(
             Response.success(r)
         } catch (e: Throwable) {
             Response.failure(
-                if (null != res) {
-                    WebasystException(
-                        response = res,
-                        cause = null,
-                        webasystApp = "",
-                        webasystHost = "",
-                    )
-                } else {
-                    WebasystException(
-                        WebasystException.ERROR_CONNECTION_FAILED,
-                        "",
-                        "",
-                        "",
-                        null,
-                        e,
-                    )
-                }
+                WebasystException(
+                    response = res,
+                    cause = null,
+                    webasystApp = "",
+                    webasystHost = "",
+                )
             )
         }
     }

@@ -16,6 +16,7 @@ import io.ktor.client.statement.readText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
+import java.io.IOException
 import java.nio.charset.Charset
 
 /**
@@ -32,7 +33,7 @@ abstract class ApiModule(
     private val tokenCache = config.tokenCache
     protected val scope = config.scope
     private val installationId = installation.id
-    protected val urlBase = installation.urlBase
+    val urlBase = installation.urlBase
     private val joinedScope = scope.joinToString(separator = ",")
     private val clientId = config.clientId
 
@@ -52,44 +53,30 @@ abstract class ApiModule(
      * If it fails requests new token and stores it in cache to be reused in further requests.
      */
     suspend fun getToken(): AccessToken {
-        try {
-            val cached = tokenCache.get(url = urlBase, scope = joinedScope)
-            if (null != cached) return cached
+        val cached = tokenCache.get(url = urlBase, scope = joinedScope)
+        if (null != cached) return cached
 
-            val cachedAuthCode = tokenCache.getAuthCode(installationId)
-            val authCode = if (null != cachedAuthCode) {
-                cachedAuthCode
-            } else {
-                val authCodesResponse = waidAuthenticator.getInstallationApiAuthCodes(setOf(installationId))
-                if (authCodesResponse.isFailure()) throw authCodesResponse.getFailureCause()
+        val cachedAuthCode = tokenCache.getAuthCode(installationId)
+        val authCode = if (null != cachedAuthCode) {
+            cachedAuthCode
+        } else {
+            val authCodesResponse = waidAuthenticator.getInstallationApiAuthCodes(setOf(installationId))
+            if (authCodesResponse.isFailure()) throw authCodesResponse.getFailureCause()
 
-                val authCodes = authCodesResponse.getSuccess()
-                val code = authCodes[installationId]
-                if (null != code) {
-                    tokenCache.setAuthCode(installationId, code)
-                }
-                code ?: throw RuntimeException("Failed to obtain authorization code")
+            val authCodes = authCodesResponse.getSuccess()
+            val code = authCodes[installationId]
+            if (null != code) {
+                tokenCache.setAuthCode(installationId, code)
             }
-
-            return getToken(urlBase, authCode)
-        } catch (e: Throwable) {
-            if (e is WebasystException) {
-                throw e
-            } else {
-                throw WebasystException(
-                    webasystCode = WebasystException.UNRECOGNIZED_ERROR,
-                    webasystMessage = "A error occurred while obtaining access token",
-                    webasystApp = appName,
-                    webasystHost = urlBase,
-                    cause = e,
-                    responseBody = null,
-                )
-            }
+            code ?: throw RuntimeException("Failed to obtain authorization code")
         }
+
+        return getToken(urlBase, authCode)
     }
 
     protected suspend fun getToken(url: String, authCode: String): AccessToken {
         var response: HttpResponse? = null
+        var token: AccessToken? = null
         try {
             response = client.post<HttpResponse>("$url/api.php/token-headless") {
                 headers {
@@ -102,37 +89,31 @@ abstract class ApiModule(
                 })
             }
 
-            val token = response.parse(object : TypeToken<AccessToken>() {})
+            token = response.parse(object : TypeToken<AccessToken>() {})
 
             if (token.error != null) {
                 throw WebasystException(
-                    webasystCode = token.error,
-                    webasystMessage = token.errorDescription ?: "",
-                    webasystApp = appName,
-                    webasystHost = urlBase,
-                    responseBody = null,
+                    apiModule = this,
+                    response = response,
+                    token = token,
+                    cause = null,
                 )
             }
             tokenCache.set(url, joinedScope, token)
             return token
+        } catch (e: IOException) {
+            throw WebasystException(
+                apiModule = this,
+                errorCode = WebasystException.ERROR_CONNECTION_FAILED,
+                cause = e,
+            )
         } catch (e: Throwable) {
-            if (null != response) {
-                throw WebasystException(
-                    response = response,
-                    cause = e,
-                    webasystApp = appName,
-                    webasystHost = urlBase,
-                )
-            } else {
-                throw WebasystException(
-                    webasystCode = WebasystException.UNRECOGNIZED_ERROR,
-                    webasystMessage = "A error occurred while obtaining access token",
-                    webasystApp = appName,
-                    webasystHost = urlBase,
-                    cause = e,
-                    responseBody = null,
-                )
-            }
+            throw WebasystException(
+                apiModule = this,
+                response = response,
+                token = token,
+                cause = e,
+            )
         }
     }
 
@@ -177,15 +158,12 @@ abstract class ApiModule(
                 e is WebasystException ->
                     throw e
                 null != response ->
-                    throw WebasystException(response, e, appName, urlBase)
+                    throw WebasystException(this, response, e)
                 else ->
                     throw WebasystException(
-                        webasystCode = WebasystException.ERROR_CONNECTION_FAILED,
-                        webasystMessage = "Failed to connect to $urlBase",
-                        webasystApp = appName,
-                        webasystHost = urlBase,
+                        errorCode = WebasystException.ERROR_CONNECTION_FAILED,
+                        apiModule = this,
                         cause = e,
-                        responseBody = null,
                     )
             }
         }
@@ -199,14 +177,22 @@ abstract class ApiModule(
 
     protected suspend fun <T> HttpResponse.parse(typeToken: TypeToken<T>): T {
         if (status.value >= 400) {
-            throw WebasystException(this, null, appName, urlBase)
+            throw WebasystException(
+                apiModule = this@ApiModule,
+                response = this,
+                cause = null,
+            )
         }
 
         val body = this.readText(Charset.forName("UTF8"))
         try {
             return gson.fromJson(body, typeToken.type)
         } catch (e: Throwable) {
-            throw WebasystException(this, e, appName, urlBase,)
+            throw WebasystException(
+                apiModule = this@ApiModule,
+                response = this,
+                cause = e,
+            )
         }
     }
 
