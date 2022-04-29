@@ -31,6 +31,25 @@ class WebasystError private constructor(
             val message: String?,
         )
 
+        operator fun invoke(body: String): WebasystError {
+            try {
+                val error = gson.fromJson(body, NullableWebasystError::class.java)
+                val code = error.code
+                var message = error.message
+                if (code == null) {
+                    throw IllegalStateException()
+                } else if (message == null) {
+                    message = code
+                }
+                return WebasystError(code = code, message = message)
+            } catch (e: Throwable) {
+                return WebasystError(
+                    code = WebasystException.ERROR_INVALID_ERROR_OBJECT,
+                    message = "Malformed error received from server."
+                )
+            }
+        }
+
         /**
          * Creates new [WebasystError] instance from given [HttpResponse]
          */
@@ -42,21 +61,8 @@ class WebasystError private constructor(
                 )
             }
 
-            var body: String? = null
-            return try {
-                body = res.readText(Charset.forName("UTF-8"))
-                val error = gson.fromJson(body, NullableWebasystError::class.java)
-                val code = error.code
-                var message = error.message
-                if (code == null) {
-                    throw IllegalStateException()
-                } else if (message == null) {
-                    message = code
-                }
-                WebasystError(code = code, message = message)
-            } catch (e: Throwable) {
-                WebasystError(code = WebasystException.ERROR_INVALID_ERROR_OBJECT, message = "Malformed error received from server.")
-            }.also {
+            val body = res.readText(Charset.forName("UTF-8"))
+            return WebasystError(body).also {
                 it.httpCode = res.status
                 it.body = body
             }

@@ -16,7 +16,6 @@ import io.ktor.client.statement.readText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
-import java.io.IOException
 import java.nio.charset.Charset
 
 /**
@@ -26,14 +25,14 @@ abstract class ApiModule(
     config: ApiClientConfiguration,
     installation: Installation,
     private val waidAuthenticator: WAIDAuthenticator,
-) {
-    abstract val appName: String
+) : ApiModuleInfo {
+    abstract override val appName: String
     private val client = config.httpClient
     protected val gson = config.gson
     private val tokenCache = config.tokenCache
     protected val scope = config.scope
     private val installationId = installation.id
-    val urlBase = installation.urlBase
+    override val urlBase = installation.urlBase
     private val joinedScope = scope.joinToString(separator = ",")
     private val clientId = config.clientId
 
@@ -92,28 +91,26 @@ abstract class ApiModule(
             token = response.parse(object : TypeToken<AccessToken>() {})
 
             if (token.error != null) {
-                throw WebasystException(
-                    apiModule = this,
-                    response = response,
-                    token = token,
-                    cause = null,
-                )
+                throw WebasystException {
+                    withApiModule(this@ApiModule)
+                    withHttpResponse(response)
+                }
             }
             tokenCache.set(url, joinedScope, token)
             return token
-        } catch (e: IOException) {
-            throw WebasystException(
-                apiModule = this,
-                errorCode = WebasystException.ERROR_CONNECTION_FAILED,
-                cause = e,
-            )
         } catch (e: Throwable) {
-            throw WebasystException(
-                apiModule = this,
-                response = response,
-                token = token,
-                cause = e,
-            )
+            throw WebasystException {
+                withApiModule(this@ApiModule)
+                if (null != response) {
+                    withHttpResponse(response)
+                } else {
+                    withErrorInfo(
+                        WebasystException.ERROR_CONNECTION_FAILED,
+                        "Connection failed"
+                    )
+                }
+                withCause(e)
+            }
         }
     }
 
@@ -157,14 +154,17 @@ abstract class ApiModule(
             when {
                 e is WebasystException ->
                     throw e
-                null != response ->
-                    throw WebasystException(this, response, e)
                 else ->
-                    throw WebasystException(
-                        errorCode = WebasystException.ERROR_CONNECTION_FAILED,
-                        apiModule = this,
-                        cause = e,
-                    )
+                    throw WebasystException {
+                        withErrorInfo(
+                            WebasystException.ERROR_CONNECTION_FAILED,
+                            "Connection failed"
+                        )
+                        if (null != response) {
+                            withHttpResponse(response)
+                        }
+                        withCause(e)
+                    }
             }
         }
     }
@@ -177,22 +177,21 @@ abstract class ApiModule(
 
     protected suspend fun <T> HttpResponse.parse(typeToken: TypeToken<T>): T {
         if (status.value >= 400) {
-            throw WebasystException(
-                apiModule = this@ApiModule,
-                response = this,
-                cause = null,
-            )
+            throw WebasystException {
+                withApiModule(this@ApiModule)
+                withHttpResponse(this@parse)
+            }
         }
 
         val body = this.readText(Charset.forName("UTF8"))
         try {
             return gson.fromJson(body, typeToken.type)
         } catch (e: Throwable) {
-            throw WebasystException(
-                apiModule = this@ApiModule,
-                response = this,
-                cause = e,
-            )
+            throw WebasystException {
+                withApiModule(this@ApiModule)
+                withHttpResponse(this@parse)
+                withCause(e)
+            }
         }
     }
 

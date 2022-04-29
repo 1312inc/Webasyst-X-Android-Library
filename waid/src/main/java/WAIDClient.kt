@@ -2,6 +2,7 @@ package com.webasyst.waid
 
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
+import com.webasyst.api.ApiModuleInfo
 import com.webasyst.api.Response
 import com.webasyst.api.WAIDAuthenticator
 import com.webasyst.api.WebasystException
@@ -41,7 +42,10 @@ class WAIDClient(
     public val authService: WebasystAuthService,
     engine: HttpClientEngine,
     private val waidHost: String,
-) : WAIDAuthenticator {
+) : WAIDAuthenticator, ApiModuleInfo {
+    override val appName: String = "WAID"
+    override val urlBase: String get() = waidHost
+
     private val client = HttpClient(engine) {
         install(JsonFeature) {
             serializer = GsonSerializer()
@@ -56,12 +60,10 @@ class WAIDClient(
     suspend fun cloudExtend(clientId: String, expireDate: Calendar): Response<Unit> = apiRequest {
         val res = doPost<HttpResponse>("$waidHost$CLOUD_EXTEND", CloudExtendRequest(clientId, expireDate))
         if (res.status != HttpStatusCode.NoContent) {
-            throw WebasystException(
-                response = res,
-                cause = null,
-                webasystApp = "",
-                webasystHost = "",
-            )
+            throw WebasystException {
+                withApiModule(this@WAIDClient)
+                withHttpResponse(res)
+            }
         }
     }
 
@@ -72,12 +74,10 @@ class WAIDClient(
         apiRequest {
             val res = doPost<HttpResponse>("$waidHost$FORCE_LICENSE_PATH", ForceLicenseRequest(clientId, slug))
             if (res.status.value >= 400) {
-                throw WebasystException(
-                    response = res,
-                    cause = null,
-                    webasystApp = "",
-                    webasystHost = "",
-                )
+                throw WebasystException {
+                    withApiModule(this@WAIDClient)
+                    withHttpResponse(res)
+                }
             }
         }
 
@@ -98,12 +98,12 @@ class WAIDClient(
             Response.success(r)
         } catch (e: Throwable) {
             Response.failure(
-                WebasystException(
-                    response = res,
-                    cause = null,
-                    webasystApp = "",
-                    webasystHost = "",
-                )
+                WebasystException {
+                    withApiModule(this@WAIDClient)
+                    if (null != res) {
+                        withHttpResponse(res)
+                    }
+                }
             )
         }
     }

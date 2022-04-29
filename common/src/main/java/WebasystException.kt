@@ -34,73 +34,75 @@ class WebasystException internal constructor(
             .format(webasystApp, webasystHost)
     }
 
+    class Builder(
+        var webasystCode: String? = null,
+        var webasystMessage: String? = null,
+        var webasystApp: String? = null,
+        var webasystHost: String? = null,
+        var responseStatusCode: Int? = null,
+        var responseBody: String? = null,
+        var cause: Throwable? = null,
+    ) {
+        fun withApiModule(apiModule: ApiModuleInfo): Builder {
+            webasystApp = apiModule.appName
+            webasystHost = apiModule.urlBase
+            return this
+        }
+
+        fun withErrorInfo(errorCode: String, errorMessage: String): Builder {
+            webasystCode = errorCode
+            webasystMessage = errorMessage
+            return this
+        }
+
+        fun withCause(cause: Throwable): Builder {
+            this.cause = cause
+            return this
+        }
+
+        /**
+         * Pulls all available data from [response]:
+         *
+         * - [responseStatusCode]
+         * - [responseBody]
+         * - [webasystCode] and [webasystMessage] if response is well-formed [WebasystError]. Sets [webasystCode] to [ERROR_INVALID_ERROR_OBJECT] otherwise.
+         *
+         * Returns this [Builder] instance to fulfill *builder pattern*.
+         */
+        suspend fun withHttpResponse(response: HttpResponse): Builder {
+            responseStatusCode = response.status.value
+            responseBody = response.readText()
+            if (null != responseBody) {
+                try {
+                    val error = WebasystError(responseBody!!)
+                    webasystCode = error.code
+                    webasystMessage = error.message
+                } catch (e: Throwable) {
+                    webasystCode = ERROR_INVALID_ERROR_OBJECT
+                    webasystMessage = "Received an invalid error object"
+                }
+            }
+            return this
+        }
+
+        fun build(): WebasystException {
+            return WebasystException(
+                webasystCode = webasystCode ?: UNRECOGNIZED_ERROR,
+                webasystMessage = webasystMessage ?: "",
+                webasystApp = webasystApp ?: "",
+                webasystHost = webasystHost ?: "",
+                responseStatusCode = responseStatusCode,
+                responseBody = responseBody,
+                cause = cause,
+            )
+        }
+    }
+
     companion object {
-        suspend operator fun invoke(
-            apiModule: ApiModule,
-            response: HttpResponse,
-            cause: Throwable?,
-        ): WebasystException {
-            val webasystError = WebasystError(response)
-            return WebasystException(
-                webasystCode = webasystError.code,
-                webasystMessage = webasystError.message,
-                webasystApp = apiModule.appName,
-                webasystHost = apiModule.urlBase,
-                responseStatusCode = webasystError.httpCode.value,
-                responseBody = webasystError.body,
-                cause = cause,
-            )
-        }
-
-        suspend operator fun invoke(
-            webasystApp: String,
-            webasystHost: String,
-            response: HttpResponse?,
-            cause: Throwable?,
-        ): WebasystException {
-            val webasystError = WebasystError(response)
-            return WebasystException(
-                webasystCode = webasystError.code,
-                webasystMessage = webasystError.message,
-                webasystApp = webasystApp,
-                webasystHost = webasystHost,
-                responseStatusCode = webasystError.httpCode.value,
-                responseBody = webasystError.body,
-                cause = cause,
-            )
-        }
-
-        suspend operator fun invoke(
-            apiModule: ApiModule,
-            response: HttpResponse?,
-            token: AccessToken?,
-            cause: Throwable?,
-        ): WebasystException {
-            return WebasystException(
-                webasystCode = token?.error ?: "",
-                webasystMessage = token?.errorDescription ?: "Unknown WAID error",
-                webasystApp = apiModule.appName,
-                webasystHost = apiModule.urlBase,
-                responseStatusCode = response?.status?.value,
-                responseBody = response?.readText(),
-                cause = cause,
-            )
-        }
-
-        operator fun invoke(
-            errorCode: String?,
-            apiModule: ApiModule,
-            cause: Throwable?,
-        ): WebasystException {
-            return WebasystException(
-                webasystCode = errorCode ?: UNRECOGNIZED_WAID_ERROR,
-                webasystMessage = "Failed to connect to ${apiModule.urlBase}",
-                webasystApp = apiModule.appName,
-                webasystHost = apiModule.urlBase,
-                responseStatusCode = 0,
-                responseBody = null,
-                cause = cause,
-            )
+        suspend operator fun invoke(block: suspend Builder.() -> Unit): WebasystException {
+            val builder = Builder()
+            block.invoke(builder)
+            return builder.build()
         }
 
         /** Unrecognized error */
