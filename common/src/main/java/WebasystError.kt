@@ -11,9 +11,9 @@ import java.nio.charset.Charset
  * Webasyst error response
  */
 class WebasystError private constructor(
-    @SerializedName("error")
+    @SerializedName(ERROR)
     val code: String,
-    @SerializedName("error_description")
+    @SerializedName(ERROR_MESSAGE)
     val message: String,
 ) {
     var body: String? = null
@@ -22,12 +22,15 @@ class WebasystError private constructor(
         private set
 
     companion object {
+        const val ERROR = "error"
+        const val ERROR_MESSAGE = "error_message"
+
         private val gson by GsonInstance
 
         private class NullableWebasystError(
-            @SerializedName("error")
+            @SerializedName(ERROR)
             val code: String?,
-            @SerializedName("error_description")
+            @SerializedName(ERROR_MESSAGE)
             val message: String?,
         )
 
