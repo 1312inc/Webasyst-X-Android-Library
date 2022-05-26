@@ -15,4 +15,6 @@ data class Installation(
     @SerializedName("cloud_expire_date")
     @JsonAdapter(DateAdapter::class)
     val cloudExpireDate: Calendar?,
+    @SerializedName("cloud_name")
+    val cloudName: String?
 )
