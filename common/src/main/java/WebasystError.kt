@@ -23,6 +23,7 @@ class WebasystError private constructor(
 
     companion object {
         const val ERROR = "error"
+        const val ERROR_DESCRIPTION = "error_description"
         const val ERROR_MESSAGE = "error_message"
 
         private val gson by GsonInstance
@@ -32,13 +33,15 @@ class WebasystError private constructor(
             val code: String?,
             @SerializedName(ERROR_MESSAGE)
             val message: String?,
+            @SerializedName(ERROR_DESCRIPTION)
+            val description: String?,
         )
 
         operator fun invoke(body: String): WebasystError {
             try {
                 val error = gson.fromJson(body, NullableWebasystError::class.java)
                 val code = error.code
-                var message = error.message
+                var message = error.message ?: error.description
                 if (code == null) {
                     throw IllegalStateException()
                 } else if (message == null) {
