@@ -12,9 +12,13 @@ data class Installation(
     val domain: String,
     @SerializedName("url")
     val url: String,
+    @SerializedName("cloud_plan_id")
+    val cloudPlanId: String?,
     @SerializedName("cloud_expire_date")
     @JsonAdapter(DateAdapter::class)
     val cloudExpireDate: Calendar?,
+    @SerializedName("cloud_trial")
+    val cloudTrial: Boolean?,
     @SerializedName("cloud_name")
     val cloudName: String?
 )
