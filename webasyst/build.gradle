@@ -52,8 +52,7 @@ dependencies {
     implementation project(':common')
     implementation project(':waid')
     implementation project(':auth:kt')
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    def ktor_version='1.4.0'
+    implementation "androidx.appcompat:appcompat:$appcompat_version"
     implementation "io.ktor:ktor-client-android:$ktor_version"
     implementation "io.ktor:ktor-client-gson:$ktor_version"
 

@@ -1,12 +1,14 @@
 buildscript {
     ext {
         androidx_annotation_version = '1.1.0'
-        build_tools_version = '30.0.2'
+        androidx_core_version = '1.10.1'
+        appcompat_version = '1.6.1'
+        build_tools_version = '34.0.0'
         dokka_plugin_version = '1.4.30'
-        kotlin_version = '1.4.21'
-        ktor_version = '1.5.1'
+        kotlin_version = '1.8.21'
+        ktor_version = '2.3.1'
         min_sdk_version = 16
-        target_sdk_version = 31
+        target_sdk_version = 33
 
         RELEASE_REPOSITORY_URL = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
         SNAPSHOT_REPOSITORY_URL = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
@@ -17,7 +19,7 @@ buildscript {
         maven { url 'https://plugins.gradle.org/m2/' }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.1.2'
+        classpath 'com.android.tools.build:gradle:7.0.4'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
