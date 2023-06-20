@@ -11,26 +11,29 @@ import com.webasyst.api.util.GsonInstance
 import com.webasyst.auth.WebasystAuthService
 import com.webasyst.auth.withFreshAccessToken
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.features.json.GsonSerializer
-import io.ktor.client.features.json.JsonFeature
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.accept
 import io.ktor.client.request.delete
-import io.ktor.client.request.forms.FormDataContent
+import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.request
+import io.ktor.client.request.setBody
 import io.ktor.client.request.url
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.readText
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.Parameters
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import io.ktor.http.parameters
+import io.ktor.serialization.gson.gson
 import io.ktor.utils.io.jvm.javaio.copyTo
 import net.openid.appauth.TokenRequest
 import net.openid.appauth.TokenResponse
@@ -47,8 +50,8 @@ class WAIDClient(
     override val urlBase: String get() = waidHost
 
     private val client = HttpClient(engine) {
-        install(JsonFeature) {
-            serializer = GsonSerializer()
+        install(ContentNegotiation) {
+            gson()
         }
     }
 
@@ -92,7 +95,7 @@ class WAIDClient(
         return try {
             res = doPost<HttpResponse>("$waidHost$CLIENT_LIST_PATH", ClientTokenRequest(appClientIDs))
             val r = gson.fromJson<Map<String, String>>(
-                res.readText(Charset.forName("Utf-8")),
+                res.bodyAsText(Charset.forName("Utf-8")),
                 (object : TypeToken<Map<String, String>>() {}).type
             )
             Response.success(r)
@@ -115,7 +118,7 @@ class WAIDClient(
                     accept(ContentType.Application.Json)
                     append("Authorization", "Bearer $accessToken")
                 }
-            }
+            }.body()
         }
     }
 
@@ -130,8 +133,8 @@ class WAIDClient(
                     append("Authorization", "Bearer $accessToken")
                 }
                 contentType(ContentType.Application.Json)
-                body = CloudSignup(build)
-            }
+                setBody(CloudSignup(build))
+            }.body()
         }
     }
 
@@ -144,8 +147,9 @@ class WAIDClient(
         }
         val codeChallenge = CodeChallenge()
         val response = apiRequest {
-            client.post<String>("$waidHost$HEADLESS_CODE_PATH") {
-                body = FormDataContent(Parameters.build {
+            client.submitForm(
+                url = "$waidHost$HEADLESS_CODE_PATH",
+                formParameters = parameters {
                     append("client_id", clientId)
                     append("device_id", authService.configuration.deviceId)
                     append("code_challenge", codeChallenge.encoded)
@@ -158,8 +162,8 @@ class WAIDClient(
                     if (null != phone) {
                         append("phone", phone)
                     }
-                })
-            }
+                }
+            ).body() as String
         }
         if (response.isSuccess()) {
             val postAuthCodeResponse = gson.fromJson(response.getSuccess(), PostAuthCodeResponse::class.java)
@@ -178,14 +182,15 @@ class WAIDClient(
 
     suspend fun postHeadlessToken(clientId: String, codeVerifier: String, code: String): HeadlessTokenResponse {
         val response = apiRequest {
-            client.post<HeadlessTokenResponse>("$waidHost$HEADLESS_TOKEN_PATH") {
-                body = FormDataContent(Parameters.build {
+            client.submitForm(
+                url = "$waidHost$HEADLESS_TOKEN_PATH",
+                formParameters = parameters {
                     append("client_id", clientId)
                     append("device_id", authService.configuration.deviceId)
                     append("code_verifier", codeVerifier)
                     append("code", code)
-                })
-            }
+                }
+            ).body() as HeadlessTokenResponse
         }
 
         if (response.isSuccess()) {
@@ -194,6 +199,7 @@ class WAIDClient(
             throw response.getFailureCause()
         }
     }
+
     fun tokenResponseFromHeadlessRequest(res: HeadlessTokenResponse) =
         TokenResponse
             .Builder(
@@ -217,12 +223,14 @@ class WAIDClient(
         }
     }
 
-    suspend fun signOut(accessToken: String): Response<Unit> =
+    suspend fun signOut(accessToken: String): Response<Unit> = apiRequest {
         client.delete("$waidHost$SIGN_OUT_PATH") {
             headers {
                 append("Authorization", "Bearer $accessToken")
             }
         }
+        Unit
+    }
 
 
     private suspend inline fun <reified T> doGet(url: String, params: Map<String, String>? = null): T =
@@ -237,7 +245,7 @@ class WAIDClient(
                     accept(ContentType.Application.Json)
                     append("Authorization", "Bearer $accessToken")
                 }
-            }
+            }.body()
         }
 
     private suspend inline fun <reified T> doPost(url: String, data: Any): T =
@@ -248,12 +256,12 @@ class WAIDClient(
                     append("Authorization", "Bearer $accessToken")
                 }
                 contentType(ContentType.Application.Json)
-                body = data
-            }
+                setBody(data)
+            }.body()
         }
 
     private suspend inline fun downloadFile(url: String, file: File) {
-        val response = client.request<HttpResponse> {
+        val response = client.request {
             url(url)
             method = HttpMethod.Get
         }
@@ -263,7 +271,7 @@ class WAIDClient(
                 file.delete()
             }
             file.outputStream().use { fo ->
-                response.content.copyTo(fo)
+                response.bodyAsChannel().copyTo(fo)
             }
         }
 
@@ -285,7 +293,7 @@ class WAIDClient(
                 headers {
                     append("Authorization", "Bearer $accessToken")
                 }
-            }
+            }.body()
         }
     }
 }

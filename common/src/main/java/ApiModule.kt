@@ -4,18 +4,17 @@ import androidx.annotation.CallSuper
 import com.google.gson.reflect.TypeToken
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
-import io.ktor.client.request.forms.MultiPartFormDataContent
-import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
-import io.ktor.client.request.post
 import io.ktor.client.request.request
 import io.ktor.client.request.url
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.readText
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
+import io.ktor.http.parameters
 import java.nio.charset.Charset
 
 /**
@@ -77,15 +76,17 @@ abstract class ApiModule(
         var response: HttpResponse? = null
         var token: AccessToken? = null
         try {
-            response = client.post<HttpResponse>("$url/api.php/token-headless") {
-                headers {
-                    accept(ContentType.Application.Json)
-                }
-                body = MultiPartFormDataContent(formData {
+            response = client.submitForm(
+                url = "$url/api.php/token-headless",
+                formParameters = parameters {
                     append("code", authCode)
                     append("scope", joinedScope)
                     append("client_id", clientId)
-                })
+                }
+            ) {
+                headers {
+                    accept(ContentType.Application.Json)
+                }
             }
 
             token = response.parse(object : TypeToken<AccessToken>() {})
@@ -183,7 +184,7 @@ abstract class ApiModule(
             }
         }
 
-        val body = this.readText(Charset.forName("UTF8"))
+        val body = this.bodyAsText(Charset.forName("UTF8"))
         try {
             return gson.fromJson(body, typeToken.type)
         } catch (e: Throwable) {

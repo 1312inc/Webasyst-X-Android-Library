@@ -5,11 +5,12 @@ import com.webasyst.api.ApiModule
 import com.webasyst.api.Installation
 import com.webasyst.api.WAIDAuthenticator
 import com.webasyst.api.util.useReader
-import io.ktor.client.request.forms.FormDataContent
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.parameter
 import io.ktor.client.request.url
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.Parameters
 import io.ktor.http.URLBuilder
 
 class InstallerApiClient(
@@ -34,15 +35,15 @@ class InstallerApiClient(
         val response = performRequest {
             method = HttpMethod.Post
             url(url.build())
-            body = FormDataContent(Parameters.build {
-                set("slug", slug)
-            })
+            formData {
+                parameter("slug", slug)
+            }
         }
 
         if (response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Created) {
             InstallerResponse.Success
         } else {
-            response.content.useReader { responseReader ->
+            response.bodyAsChannel().useReader { responseReader ->
                 gson.fromJson(responseReader, InstallerResponse.Error::class.java)
             }
         }

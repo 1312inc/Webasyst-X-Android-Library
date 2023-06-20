@@ -3,7 +3,7 @@ package com.webasyst.api
 import com.google.gson.annotations.SerializedName
 import com.webasyst.api.util.GsonInstance
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.readText
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import java.nio.charset.Charset
 
@@ -67,7 +67,7 @@ class WebasystError private constructor(
                 )
             }
 
-            val body = res.readText(Charset.forName("UTF-8"))
+            val body = res.bodyAsText(Charset.forName("UTF-8"))
             return WebasystError(body).also {
                 it.httpCode = res.status
                 it.body = body

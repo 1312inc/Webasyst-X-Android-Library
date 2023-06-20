@@ -3,8 +3,8 @@ package com.webasyst.api
 import com.webasyst.api.util.GsonInstance
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.features.json.GsonSerializer
-import io.ktor.client.features.json.JsonFeature
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.gson.gson
 
 /**
  * This class holds collection of all configured [api module factories][ApiModuleFactory]
@@ -63,9 +63,9 @@ class ApiClient private constructor(
          * Creates [HttpClient]. Extracted for testing purposes.
          */
         fun createHttpClient(engine: HttpClientEngine) = HttpClient(engine) {
-            install(JsonFeature) {
-                serializer = GsonSerializer {
-                    this.apply(GsonInstance::configureGsonBuilder)
+            install(ContentNegotiation) {
+                gson{
+                    GsonInstance.configureGsonBuilder(this)
                 }
             }
             expectSuccess = false

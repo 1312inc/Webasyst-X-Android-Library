@@ -1,7 +1,7 @@
 package com.webasyst.api
 
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.readText
+import io.ktor.client.statement.bodyAsText
 import java.util.Locale
 import java.util.ResourceBundle
 
@@ -71,7 +71,7 @@ class WebasystException internal constructor(
          */
         suspend fun withHttpResponse(response: HttpResponse): Builder {
             responseStatusCode = response.status.value
-            responseBody = response.readText()
+            responseBody = response.bodyAsText()
             if (null != responseBody) {
                 try {
                     val error = WebasystError(responseBody!!)
