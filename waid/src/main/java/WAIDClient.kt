@@ -8,18 +8,24 @@ import com.webasyst.api.WAIDAuthenticator
 import com.webasyst.api.WebasystException
 import com.webasyst.api.apiRequest
 import com.webasyst.api.util.GsonInstance
+import com.webasyst.auth.AccessTokenTask
+import com.webasyst.auth.WebasystAuthInterface
 import com.webasyst.auth.WebasystAuthService
 import com.webasyst.auth.withFreshAccessToken
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.request.delete
+import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
@@ -232,7 +238,6 @@ class WAIDClient(
         Unit
     }
 
-
     private suspend inline fun <reified T> doGet(url: String, params: Map<String, String>? = null): T =
         authService.withFreshAccessToken { accessToken ->
             client.get(url) {
@@ -277,7 +282,133 @@ class WAIDClient(
 
     }
 
+
+    suspend fun updateUserInfo(userInfo: UpdateUserInfo): Response<UserInfo> {
+        return apiRequest {
+            doPatch("$waidHost$USER_LIST_PATH") {
+                contentType(ContentType.Application.Json)
+                setBody(userInfo)
+            }
+        }
+    }
+
+    suspend fun updateUserpic(userpic: ByteArray): Response<UserpicUploadResponse> {
+        return apiRequest {
+            doPost("$waidHost$USERPIC_PATH") {
+                contentType(ContentType.Image.Any)
+                setBody(userpic)
+            }
+        }
+    }
+
+    suspend fun deleteUserpic(): Response<String> {
+        return apiRequest {
+            doDelete("$waidHost$USERPIC_PATH")
+        }
+    }
+
+    suspend fun requestMergeCode(): Response<MergeCodeResponse> = apiRequest {
+        doGet("$waidHost$MERGE_CODE_PATH")
+    }
+
+    private suspend inline fun <reified T> doPatch(url: String, crossinline block: HttpRequestBuilder.() -> Unit): T =
+        authService.withFreshAccessToken { accessToken ->
+            client.patch(url) {
+                headers {
+                    accept(ContentType.Application.Json)
+                    append("Authorization", "Bearer $accessToken")
+                }
+                apply(block)
+            }.body()
+        }
+
+    private suspend inline fun <reified T> doPost(url: String, crossinline block: HttpRequestBuilder.() -> Unit): T =
+        authService.withFreshAccessToken { accessToken ->
+            client.post(url) {
+                headers {
+                    accept(ContentType.Application.Json)
+                    append("Authorization", "Bearer $accessToken")
+                }
+                apply(block)
+            }.body()
+        }
+
+    private suspend inline fun <reified T> doDelete(url: String): T =
+        authService.withFreshAccessToken { accessToken ->
+            client.delete(url) {
+                headers {
+                    append("Authorization", "Bearer $accessToken")
+                }
+            }.body()
+        }
+
+    suspend fun cloudRename(request: CloudRenameRequest): Response<String> = apiRequest {
+        doPost("$waidHost$CLOUD_RENAME_PATH") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+    }
+
+    suspend fun connectInstallation(code: String, accessToken: String?): Response<Installation> =
+        apiRequest {
+            var response: HttpResponse? = null
+            try {
+                if (accessToken != null){
+                    response = client.post("$waidHost$INSTALLATION_CONNECT") {
+                        headers {
+                            accept(ContentType.Application.Json)
+                            append("Authorization", "Bearer $accessToken")
+                        }
+                        formData {
+                            parameter("code", code)
+                        }
+                    }
+                    response.body()
+                } else {
+                    response = authService.withFreshAccessToken { accessToken ->
+                        client.post("$waidHost$INSTALLATION_CONNECT") {
+                            headers {
+                                accept(ContentType.Application.Json)
+                                append("Authorization", "Bearer $accessToken")
+                            }
+                            formData {
+                                parameter("code", code)
+                            }
+                        }
+                    }
+                    response.body()
+                    /*doPost("$waidHost$INSTALLATION_CONNECT"){
+                        formData {
+                            parameter("code", code)
+                        }
+                    }*/
+                }
+            } catch (e: Throwable) {
+                throw WebasystException {
+                    withApiModule(this@WAIDClient)
+                    if (null != response) {
+                        withHttpResponse(response!!)
+                    } else if (e is ClientRequestException) {
+                        withHttpResponse(e.response)
+                    }
+                    withCause(e)
+                }
+            }
+        }
+
+    private suspend fun <T> WebasystAuthInterface.withFreshAccessToken(task: suspend (token: String?, exception: Throwable?) -> T): T =
+        withFreshAccessToken(object : AccessTokenTask<T> {
+            override suspend fun apply(accessToken: String?, exception: Throwable?): T =
+                task(accessToken, exception)
+        })
+
     companion object {
+        private const val TAG = "com.webasyst.waid"
+        private const val CLOUD_RENAME_PATH = "/id/api/v1/cloud/rename/"
+        private const val USERPIC_PATH = "/id/api/v1/profile/userpic/"
+        private const val MERGE_CODE_PATH = "/id/api/v1/profile/mergecode/"
+        private const val INSTALLATION_CONNECT = "/id/api/v1/installation/connect/"
+
         private const val SIGN_OUT_PATH = "/id/api/v1/delete/"
         private const val CLOUD_EXTEND = "/id/api/v1/cloud/extend/"
         private const val CLOUD_SIGNUP_PATH = "/id/api/v1/cloud/signup/"
