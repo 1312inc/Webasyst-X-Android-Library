@@ -181,6 +181,7 @@ class WAIDClient(
             throw response.getFailureCause()
         }
     }
+
     private class PostAuthCodeResponse(
         @SerializedName("next_request_allowed_at")
         val nextRequestAllowedAt: Long,
@@ -205,6 +206,17 @@ class WAIDClient(
             throw response.getFailureCause()
         }
     }
+
+    suspend fun postQrToken(clientId: String, scope: String, code: String): HeadlessTokenResponse =
+        client.submitForm(
+            url = "$waidHost$QR_TOKEN_PATH",
+            formParameters = parameters {
+                append("client_id", clientId)
+                append("device_id", authService.configuration.deviceId)
+                append("scope", scope)
+                append("code", code)
+            }
+        ).body() as HeadlessTokenResponse
 
     fun tokenResponseFromHeadlessRequest(res: HeadlessTokenResponse) =
         TokenResponse
@@ -404,10 +416,6 @@ class WAIDClient(
 
     companion object {
         private const val TAG = "com.webasyst.waid"
-        private const val CLOUD_RENAME_PATH = "/id/api/v1/cloud/rename/"
-        private const val USERPIC_PATH = "/id/api/v1/profile/userpic/"
-        private const val MERGE_CODE_PATH = "/id/api/v1/profile/mergecode/"
-        private const val INSTALLATION_CONNECT = "/id/api/v1/installation/connect/"
 
         private const val SIGN_OUT_PATH = "/id/api/v1/delete/"
         private const val CLOUD_EXTEND = "/id/api/v1/cloud/extend/"
@@ -418,6 +426,12 @@ class WAIDClient(
         private const val CLIENT_LIST_PATH = "/id/api/v1/auth/client/"
         private const val HEADLESS_CODE_PATH = "/id/oauth2/auth/headless/code/"
         private const val HEADLESS_TOKEN_PATH = "/id/oauth2/auth/headless/token/"
+
+        private const val CLOUD_RENAME_PATH = "/id/api/v1/cloud/rename/"
+        private const val USERPIC_PATH = "/id/api/v1/profile/userpic/"
+        private const val MERGE_CODE_PATH = "/id/api/v1/profile/mergecode/"
+        private const val INSTALLATION_CONNECT = "/id/api/v1/installation/connect/"
+        private const val QR_TOKEN_PATH = "/id/oauth2/auth/qr/token/"
 
         suspend fun signOut(httpClient: HttpClient, waidHost: String, accessToken: String): Response<String> = apiRequest {
             httpClient.delete("$waidHost$SIGN_OUT_PATH") {
