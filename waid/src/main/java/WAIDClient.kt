@@ -320,30 +320,85 @@ class WAIDClient(
     }
 
     suspend fun requestMergeCode(): Response<MergeCodeResponse> = apiRequest {
-        doGet("$waidHost$MERGE_CODE_PATH")
+        doGets("$waidHost$MERGE_CODE_PATH")
     }
 
-    private suspend inline fun <reified T> doPatch(url: String, crossinline block: HttpRequestBuilder.() -> Unit): T =
-        authService.withFreshAccessToken { accessToken ->
-            client.patch(url) {
-                headers {
-                    accept(ContentType.Application.Json)
-                    append("Authorization", "Bearer $accessToken")
+    private suspend inline fun <reified T> doGets(url: String): T {
+        var response: HttpResponse? = null
+        return try {
+            authService.withFreshAccessToken { accessToken ->
+                response = client.get(url) {
+                    headers {
+                        accept(ContentType.Application.Json)
+                        append("Authorization", "Bearer $accessToken")
+                    }
                 }
-                apply(block)
-            }.body()
+                response!!.body()
+            }
+        } catch (e: Throwable) {
+            throw WebasystException {
+                withApiModule(this@WAIDClient)
+                if (null != response) {
+                    withHttpResponse(response!!)
+                } else if (e is ClientRequestException) {
+                    withHttpResponse(e.response)
+                }
+                withCause(e)
+            }
         }
+    }
 
-    private suspend inline fun <reified T> doPost(url: String, crossinline block: HttpRequestBuilder.() -> Unit): T =
-        authService.withFreshAccessToken { accessToken ->
-            client.post(url) {
-                headers {
-                    accept(ContentType.Application.Json)
-                    append("Authorization", "Bearer $accessToken")
+    private suspend inline fun <reified T> doPatch(url: String, crossinline block: HttpRequestBuilder.() -> Unit): T {
+        var response: HttpResponse? = null
+        return try {
+            authService.withFreshAccessToken { accessToken ->
+                response = client.patch(url) {
+                    headers {
+                        accept(ContentType.Application.Json)
+                        append("Authorization", "Bearer $accessToken")
+                    }
+                    apply(block)
                 }
-                apply(block)
-            }.body()
+                response!!.body()
+            }
+        } catch (e: Throwable) {
+            throw WebasystException {
+                withApiModule(this@WAIDClient)
+                if (null != response) {
+                    withHttpResponse(response!!)
+                } else if (e is ClientRequestException) {
+                    withHttpResponse(e.response)
+                }
+                withCause(e)
+            }
         }
+    }
+
+    private suspend inline fun <reified T> doPost(url: String, crossinline block: HttpRequestBuilder.() -> Unit): T {
+        var response: HttpResponse? = null
+        return try {
+            authService.withFreshAccessToken { accessToken ->
+                response = client.post(url) {
+                    headers {
+                        accept(ContentType.Application.Json)
+                        append("Authorization", "Bearer $accessToken")
+                    }
+                    apply(block)
+                }
+                response!!.body()
+            }
+        } catch (e: Throwable) {
+            throw WebasystException {
+                withApiModule(this@WAIDClient)
+                if (null != response) {
+                    withHttpResponse(response!!)
+                } else if (e is ClientRequestException) {
+                    withHttpResponse(e.response)
+                }
+                withCause(e)
+            }
+        }
+    }
 
     private suspend inline fun <reified T> doDelete(url: String): T =
         authService.withFreshAccessToken { accessToken ->
