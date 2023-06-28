@@ -17,6 +17,7 @@ import net.openid.appauth.CodeVerifierUtil;
 import net.openid.appauth.ResponseTypeValues;
 import net.openid.appauth.TokenRequest;
 
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -147,7 +148,7 @@ public class WebasystAuthService {
     public void signIn(AuthorizationRequest request, PendingIntent success, PendingIntent cancelled) {
         final AuthorizationRequest actualRequest = new AuthorizationRequest
             .Builder(request.configuration, request.clientId, request.responseType, request.redirectUri)
-//            .setAdditionalParameters(additionalParams)
+            .setAdditionalParameters(request.additionalParameters)
             .setDisplay(request.display)
             .setLoginHint(request.loginHint)
             .setPrompt(request.prompt)
@@ -184,6 +185,21 @@ public class WebasystAuthService {
         )
             .setCodeVerifier(codeVerifier)
             .setScopes(configuration.scope)
+            .build();
+    }
+
+    AuthorizationRequest createAuthorizationRequest(Map<String, String> additionalParameters) {
+        final String codeVerifier = CodeVerifierUtil.generateRandomCodeVerifier();
+
+        return new AuthorizationRequest.Builder(
+            authServiceConfiguration,
+            configuration.clientId,
+            ResponseTypeValues.CODE,
+            configuration.callbackUri
+        )
+            .setCodeVerifier(codeVerifier)
+            .setScopes(configuration.scope)
+            .setAdditionalParameters(additionalParameters)
             .build();
     }
 

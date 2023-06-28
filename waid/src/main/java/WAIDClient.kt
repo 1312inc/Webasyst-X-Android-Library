@@ -416,7 +416,7 @@ class WAIDClient(
         }
     }
 
-    suspend fun connectInstallation(code: String, accessToken: String?): Response<Installation> =
+    suspend fun connectInstallation(code: String, accessToken: String? = null): Response<Installation> =
         apiRequest {
             var response: HttpResponse? = null
             try {
@@ -444,11 +444,6 @@ class WAIDClient(
                         }
                     }
                     response.body()
-                    /*doPost("$waidHost$INSTALLATION_CONNECT"){
-                        formData {
-                            parameter("code", code)
-                        }
-                    }*/
                 }
             } catch (e: Throwable) {
                 throw WebasystException {
