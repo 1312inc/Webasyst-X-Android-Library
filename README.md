@@ -4,8 +4,7 @@
 
 ### Starting from template
 
-There is an [example application](https://github.com/1312inc/Webasyst-X-Android) using this library.
-Feel free to fork it and modify to your needs.
+Boilerplate demo app using this Webasyst library is available here: **https://github.com/1312inc/Webasyst-X-Android**
 
 ### Starting from scratch
 
@@ -63,6 +62,8 @@ If that's not an option (eg. your Activity is an extension of some other activit
 
 5. Use Webasyst ID (WAID) API methods
 
-Create a instance of the `WAIDClient` to use API methods.  See the description of the methods [here](https://developers.webasyst.ru/docs/features/webasyst-id-auth/resources-server-api/)
+Create an instance of the `WAIDClient` to use API methods. Please refer to the [official Webasyst documentation](https://developers.webasyst.com/docs/features/webasyst-id-auth/resources-server-api/)
+
+Get your Webasyst ID auth client id here: https://www.webasyst.com/my/waid/apps/
 
 6. You are good to go.
