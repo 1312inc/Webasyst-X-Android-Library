@@ -4,8 +4,7 @@
 
 ### Starting from template
 
-There is an [example application](https://github.com/1312inc/Webasyst-X-Android) using this library.
-Feel free to fork it and modify to your needs.
+Boilerplate demo app using this Webasyst library is available here: **https://github.com/1312inc/Webasyst-X-Android**
 
 ### Starting from scratch
 
@@ -22,17 +21,19 @@ repositories {
 
 dependencies {
     // Library version to use
-    def webasyst_version = '0.0.2'
-    // Authentication module. Used in log in process.
+    def webasyst_version = '1.1.1'
+    // Authentication module. Used in log in process and into the process of merging WAID profiles.
     implementation "com.webasyst:auth-kt:$webasyst_version"
     // Webasyst ID (WAID) api client
     implementation "com.webasyst:waid:$webasyst_version"
     // Webasyst client - used to retrieve basic installation data
     implementation "com.webasyst:webasyst:$webasyst_version"
+    // Installer client - used to install products
+    implementation "com.webasyst:app-installer:$webasyst_version"
     // Required application-specific modules
     implementation "com.webasyst:app-blog:$webasyst_version"
-        implementation "com.webasyst:app-shop:$webasyst_version"
-        implementation "com.webasyst:app-site:$webasyst_version"
+    implementation "com.webasyst:app-shop:$webasyst_version"
+    implementation "com.webasyst:app-site:$webasyst_version"
 }
 ```
 
@@ -50,8 +51,8 @@ Note the comment on `<data android:scheme=` key
 </activity>
 ```
 
-3. Configure Webasyst ID (WAID) client. This should be done once, preferably early in application's lifecycle. The recommended option is to extend `Application` class and do configuration in it's `onCreate()` method.
-See `WebasystAuthService.configure()` for details.
+3. Configure Webasyst ID (WAID) authentication sevice. This should be done once, preferably early in application's lifecycle. The recommended option is to extend `Application` class and do configuration in it's `onCreate()` method.
+See `WebasystAuthService.configure()` for details. For Kotlin, use `configureWebasystAuth()`
 
 4. Implement Authentication Activity.
 
@@ -59,4 +60,10 @@ The easiest way to do it is to extend your Activity from `WebasystAuthActivity` 
 
 If that's not an option (eg. your Activity is an extension of some other activity) you can use WebasystAuthHelper directly. See `WebasystAuthActivity`'s code for details.
 
-5. You are good to go. Use `WebasystAuthService`'s `withFreshAccessToken()` (or Kotlin extension) to perform api requests.
+5. Use Webasyst ID (WAID) API methods
+
+Create an instance of the `WAIDClient` to use API methods. Please refer to the [official Webasyst documentation](https://developers.webasyst.com/docs/features/webasyst-id-auth/resources-server-api/)
+
+Get your Webasyst ID auth client id here: https://www.webasyst.com/my/waid/apps/
+
+6. You are good to go.
