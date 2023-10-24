@@ -30,14 +30,14 @@ class InstallerApiClient(
                 set("access_token", getToken().token)
                 set("format", "json")
             }
+            encodedParameters.apply {
+                set("slug", slug)
+            }
         }
 
         val response = performRequest {
             method = HttpMethod.Post
             url(url.build())
-            formData {
-                parameter("slug", slug)
-            }
         }
 
         if (response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Created) {
