@@ -7,12 +7,12 @@ import io.ktor.client.request.accept
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
-import io.ktor.client.request.request
 import io.ktor.client.request.url
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
+import io.ktor.http.Parameters
 import io.ktor.http.contentType
 import io.ktor.http.parameters
 import java.nio.charset.Charset
@@ -58,7 +58,8 @@ abstract class ApiModule(
         val authCode = if (null != cachedAuthCode) {
             cachedAuthCode
         } else {
-            val authCodesResponse = waidAuthenticator.getInstallationApiAuthCodes(setOf(installationId))
+            val authCodesResponse =
+                waidAuthenticator.getInstallationApiAuthCodes(setOf(installationId))
             if (authCodesResponse.isFailure()) throw authCodesResponse.getFailureCause()
 
             val authCodes = authCodesResponse.getSuccess()
@@ -122,7 +123,10 @@ abstract class ApiModule(
      * @param urlString request url. Make sure to call urls only within Webasyst installation
      * as it will leak your access token otherwise.
      */
-    protected suspend inline fun <reified T> get(urlString: String, crossinline block: HttpRequestBuilder.() -> Unit = {}): Response<T> = apiRequest {
+    protected suspend inline fun <reified T> get(
+        urlString: String,
+        crossinline block: HttpRequestBuilder.() -> Unit = {}
+    ): Response<T> = apiRequest {
         request {
             method = HttpMethod.Get
             url(urlString)
@@ -137,7 +141,10 @@ abstract class ApiModule(
      * @param urlString request url. Make sure to call urls only within Webasyst installation
      * as it will leak your access token otherwise.
      */
-    protected suspend inline fun <reified T> post(urlString: String, crossinline block: HttpRequestBuilder.() -> Unit = {}): Response<T> = apiRequest {
+    protected suspend inline fun <reified T> post(
+        urlString: String,
+        crossinline block: HttpRequestBuilder.() -> Unit = {}
+    ): Response<T> = apiRequest {
         request {
             contentType(ContentType.Application.Json)
             method = HttpMethod.Post
@@ -149,12 +156,13 @@ abstract class ApiModule(
     protected suspend inline fun <reified T> request(noinline block: HttpRequestBuilder.() -> Unit): T {
         var response: HttpResponse? = null
         try {
-            response = performRequest(block)
+            response = performRequest(block = block)
             return response.parse(object : TypeToken<T>() {})
         } catch (e: Throwable) {
             when {
                 e is WebasystException ->
                     throw e
+
                 else ->
                     throw WebasystException {
                         withErrorInfo(
@@ -170,8 +178,11 @@ abstract class ApiModule(
         }
     }
 
-    protected suspend fun performRequest(block: HttpRequestBuilder.() -> Unit): HttpResponse =
-        client.request {
+    protected suspend fun performRequest(
+        formParameters: Parameters = Parameters.Empty,
+        block: HttpRequestBuilder.() -> Unit
+    ): HttpResponse =
+        client.submitForm(formParameters = formParameters) {
             apply(block)
             configureRequest()
         }

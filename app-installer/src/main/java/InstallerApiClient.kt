@@ -5,12 +5,12 @@ import com.webasyst.api.ApiModule
 import com.webasyst.api.Installation
 import com.webasyst.api.WAIDAuthenticator
 import com.webasyst.api.util.useReader
-import io.ktor.client.request.forms.formData
 import io.ktor.client.request.url
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
+import io.ktor.http.parameters
 
 class InstallerApiClient(
     config: ApiClientConfiguration,
@@ -31,10 +31,9 @@ class InstallerApiClient(
             }
         }
 
-        val response = performRequest {
+        val response = performRequest(formParameters = parameters { append("slug", slug) }) {
             method = HttpMethod.Post
             url(url.build())
-            formData { append("slug", slug) }
         }
 
         if (response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Created) {
