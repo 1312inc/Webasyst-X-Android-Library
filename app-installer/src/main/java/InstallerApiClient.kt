@@ -6,7 +6,6 @@ import com.webasyst.api.Installation
 import com.webasyst.api.WAIDAuthenticator
 import com.webasyst.api.util.useReader
 import io.ktor.client.request.forms.formData
-import io.ktor.client.request.parameter
 import io.ktor.client.request.url
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpMethod
