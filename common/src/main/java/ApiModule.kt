@@ -7,6 +7,7 @@ import io.ktor.client.request.accept
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
+import io.ktor.client.request.request
 import io.ktor.client.request.url
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
@@ -178,7 +179,13 @@ abstract class ApiModule(
         }
     }
 
-    protected suspend fun performRequest(
+    protected suspend fun performRequest(block: HttpRequestBuilder.() -> Unit): HttpResponse =
+        client.request {
+            apply(block)
+            configureRequest()
+        }
+
+    protected suspend fun performRequestWithFormData(
         formParameters: Parameters = Parameters.Empty,
         block: HttpRequestBuilder.() -> Unit
     ): HttpResponse =

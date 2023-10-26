@@ -31,10 +31,11 @@ class InstallerApiClient(
             }
         }
 
-        val response = performRequest(formParameters = parameters { append("slug", slug) }) {
-            method = HttpMethod.Post
-            url(url.build())
-        }
+        val response =
+            performRequestWithFormData(formParameters = parameters { append("slug", slug) }) {
+                method = HttpMethod.Post
+                url(url.build())
+            }
 
         if (response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Created) {
             InstallerResponse.Success
