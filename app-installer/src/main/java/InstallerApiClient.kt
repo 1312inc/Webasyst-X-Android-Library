@@ -5,6 +5,8 @@ import com.webasyst.api.ApiModule
 import com.webasyst.api.Installation
 import com.webasyst.api.WAIDAuthenticator
 import com.webasyst.api.util.useReader
+import io.ktor.client.request.forms.FormDataContent
+import io.ktor.client.request.setBody
 import io.ktor.client.request.url
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpMethod
@@ -31,11 +33,17 @@ class InstallerApiClient(
             }
         }
 
-        val response =
-            performRequestWithFormData(formParameters = parameters { append("slug", slug) }) {
-                method = HttpMethod.Post
-                url(url.build())
-            }
+        val response = performRequest {
+            method = HttpMethod.Post
+            url(url.build())
+            setBody(
+                FormDataContent(
+                    parameters {
+                        append("slug", slug)
+                    }
+                )
+            )
+        }
 
         if (response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Created) {
             InstallerResponse.Success

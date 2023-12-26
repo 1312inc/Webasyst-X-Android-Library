@@ -20,7 +20,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.request.delete
-import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.FormDataContent
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
@@ -132,6 +132,23 @@ class WAIDClient(
      * POST /id/api/v1/cloud/signup/
      */
     suspend fun postCloudSignUp(build: CloudSignup.Builder.() -> Unit): Response<CloudSignupResponse> = apiRequest {
+        authService.withFreshAccessToken { accessToken ->
+            client.post("$waidHost$CLOUD_SIGNUP_PATH") {
+                headers {
+                    accept(ContentType.Application.Json)
+                    append("Authorization", "Bearer $accessToken")
+                }
+                contentType(ContentType.Application.Json)
+                setBody(CloudSignup(build))
+            }.body()
+        }
+    }
+
+    /**
+     * POST /id/api/v1/cloud/signup/
+     * with extended response
+     */
+    suspend fun postCloudSignUpExt(build: CloudSignup.Builder.() -> Unit): Response<CloudSignupResponseExt> = apiRequest {
         authService.withFreshAccessToken { accessToken ->
             client.post("$waidHost$CLOUD_SIGNUP_PATH") {
                 headers {
@@ -426,9 +443,13 @@ class WAIDClient(
                             accept(ContentType.Application.Json)
                             append("Authorization", "Bearer $accessToken")
                         }
-                        formData {
-                            parameter("code", code)
-                        }
+                        setBody(
+                            FormDataContent(
+                                parameters {
+                                    append("code", code)
+                                }
+                            )
+                        )
                     }
                     response.body()
                 } else {
@@ -438,9 +459,13 @@ class WAIDClient(
                                 accept(ContentType.Application.Json)
                                 append("Authorization", "Bearer $accessToken")
                             }
-                            formData {
-                                parameter("code", code)
-                            }
+                            setBody(
+                                FormDataContent(
+                                    parameters {
+                                        append("code", code)
+                                    }
+                                )
+                            )
                         }
                     }
                     response.body()
