@@ -149,15 +149,9 @@ class WAIDClient(
      * with extended response
      */
     suspend fun postCloudSignUpExt(build: CloudSignup.Builder.() -> Unit): Response<CloudSignupResponseExt> = apiRequest {
-        authService.withFreshAccessToken { accessToken ->
-            client.post("$waidHost$CLOUD_SIGNUP_PATH") {
-                headers {
-                    accept(ContentType.Application.Json)
-                    append("Authorization", "Bearer $accessToken")
-                }
-                contentType(ContentType.Application.Json)
-                setBody(CloudSignup(build))
-            }.body()
+        doPost("$waidHost$CLOUD_SIGNUP_PATH") {
+            contentType(ContentType.Application.Json)
+            setBody(CloudSignup(build))
         }
     }
 
