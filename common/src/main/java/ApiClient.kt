@@ -2,6 +2,7 @@ package com.webasyst.api
 
 import com.webasyst.api.util.GsonInstance
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.gson.gson
@@ -13,6 +14,7 @@ class ApiClient private constructor(
     override val clientId: String,
     modules: Map<Class<out ApiModule>, (config: ApiClientConfiguration, waidAuthenticator: WAIDAuthenticator) -> ApiModuleFactory<ApiModule>>,
     engine: HttpClientEngine,
+    httpClientConfigBlock: (HttpClientConfig<*>.() -> Unit)?,
     override val tokenCache: TokenCache,
     val waidAuthenticator: WAIDAuthenticator,
 ) : ApiClientConfiguration {
@@ -22,7 +24,7 @@ class ApiClient private constructor(
     override val scope = this.modules
         .map { (_, factory) -> factory.scope }
     override val gson by GsonInstance
-    override val httpClient = createHttpClient(engine)
+    override val httpClient = createHttpClient(engine, httpClientConfigBlock)
 
     /**
      * returns [ApiModuleFactory] for given [ApiModule] class or throws [IllegalStateException] if it is not configured
@@ -36,6 +38,7 @@ class ApiClient private constructor(
         var waidAuthenticator: WAIDAuthenticator? = null
         var httpClientEngine: HttpClientEngine? = null
         var tokenCache: TokenCache = TokenCacheRamImpl()
+        var httpClientConfig: (HttpClientConfig<*>.() -> Unit)? = null
 
         fun <T: ApiModule> addModuleFactory(cls: Class<T>, factory: (config: ApiClientConfiguration, waidAuthenticator: WAIDAuthenticator) -> ApiModuleFactory<T>) {
             modules[cls] = factory
@@ -46,6 +49,7 @@ class ApiClient private constructor(
             modules = modules,
             waidAuthenticator = waidAuthenticator ?: throw IllegalStateException("WAID authenticator must be set"),
             engine = httpClientEngine ?: throw IllegalStateException("HttpClientEngine must be set"),
+            httpClientConfigBlock = httpClientConfig,
             tokenCache = tokenCache,
         )
     }
@@ -62,13 +66,17 @@ class ApiClient private constructor(
         /**
          * Creates [HttpClient]. Extracted for testing purposes.
          */
-        fun createHttpClient(engine: HttpClientEngine) = HttpClient(engine) {
+        fun createHttpClient(
+            engine: HttpClientEngine,
+            httpClientConfigBlock: (HttpClientConfig<*>.() -> Unit)?
+        ) = HttpClient(engine) {
             install(ContentNegotiation) {
                 gson{
                     GsonInstance.configureGsonBuilder(this)
                 }
             }
             expectSuccess = false
+            httpClientConfigBlock?.invoke(this)
         }
     }
 }
