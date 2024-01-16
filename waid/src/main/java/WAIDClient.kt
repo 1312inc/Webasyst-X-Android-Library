@@ -13,6 +13,7 @@ import com.webasyst.auth.WebasystAuthInterface
 import com.webasyst.auth.WebasystAuthService
 import com.webasyst.auth.withFreshAccessToken
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.ClientRequestException
@@ -48,9 +49,10 @@ import java.nio.charset.Charset
 import java.util.Calendar
 
 class WAIDClient(
-    public val authService: WebasystAuthService,
+    val authService: WebasystAuthService,
     engine: HttpClientEngine,
     private val waidHost: String,
+    httpClientConfigBlock: (HttpClientConfig<*>.() -> Unit)? = null
 ) : WAIDAuthenticator, ApiModuleInfo {
     override val appName: String = "WAID"
     override val urlBase: String get() = waidHost
@@ -59,6 +61,7 @@ class WAIDClient(
         install(ContentNegotiation) {
             gson()
         }
+        httpClientConfigBlock?.invoke(this)
     }
 
     private val gson by GsonInstance
